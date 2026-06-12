@@ -19,6 +19,40 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+const TIPS = [
+  { title: "Search anything", body: "Press / from anywhere to jump to a board, item, or member." },
+  { title: "Kanban auto-appears", body: "Add a Status column to a board and the Kanban view shows up automatically." },
+  { title: "Forms for intake", body: "Publish a public form to collect work from people without an account." },
+  { title: "Automate the boring", body: "When status changes → notify, reassign, or move the item." },
+  { title: "Drawer = details", body: "Click any item title to open comments, files, and activity." },
+];
+
+function TipOfTheDay() {
+  const [i, setI] = useState(() => Math.floor(Math.random() * TIPS.length));
+  useEffect(() => {
+    const t = setInterval(() => setI((p) => (p + 1) % TIPS.length), 6000);
+    return () => clearInterval(t);
+  }, []);
+  const tip = TIPS[i];
+  return (
+    <div className="max-w-md">
+      <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Tip &amp; tricks</div>
+      <h2 className="text-2xl font-semibold tracking-tight leading-snug">{tip.title}</h2>
+      <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{tip.body}</p>
+      <div className="mt-6 flex gap-1.5">
+        {TIPS.map((_, n) => (
+          <button
+            key={n}
+            onClick={() => setI(n)}
+            aria-label={`Show tip ${n + 1}`}
+            className={`h-1.5 rounded-full transition-all ${n === i ? "w-6 bg-primary" : "w-1.5 bg-border"}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");

@@ -2,12 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ArrowLeft, Copy } from "lucide-react";
+import { ArrowLeft, Copy, RefreshCw, PlugZap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -20,6 +19,9 @@ import {
   getTessIntegration,
   upsertTessIntegration,
   listIntegrationDispatches,
+  getIntegrationStatus,
+  pingTess,
+  retryDispatch,
 } from "@/lib/integrations.functions";
 
 export const Route = createFileRoute("/_authenticated/w/$workspaceId/integrations")({
@@ -34,6 +36,9 @@ function IntegrationsPage() {
   const getIntegFn = useServerFn(getTessIntegration);
   const upsertFn = useServerFn(upsertTessIntegration);
   const listDispatchesFn = useServerFn(listIntegrationDispatches);
+  const statusFn = useServerFn(getIntegrationStatus);
+  const pingFn = useServerFn(pingTess);
+  const retryFn = useServerFn(retryDispatch);
 
   const boardsQ = useQuery({
     queryKey: ["boards", workspaceId],
@@ -46,6 +51,11 @@ function IntegrationsPage() {
   const dispatchesQ = useQuery({
     queryKey: ["integration-dispatches", workspaceId],
     queryFn: () => listDispatchesFn({ data: { workspaceId } }),
+  });
+  const statusQ = useQuery({
+    queryKey: ["integration-status", workspaceId],
+    queryFn: () => statusFn({ data: { workspaceId } }),
+    refetchInterval: 30_000,
   });
 
   const [boardId, setBoardId] = useState<string>("");
@@ -80,6 +90,29 @@ function IntegrationsPage() {
     onError: (e: any) => toast.error(e?.message ?? "Could not save"),
   });
 
+  const ping = useMutation({
+    mutationFn: () => pingFn({ data: { workspaceId } }),
+    onSuccess: (res: any) => {
+      if (res?.skipped) toast.message("Integration is disabled or not configured");
+      else if (res?.ok) toast.success(`TESS responded ${res.statusCode ?? "OK"}`);
+      else toast.error(`TESS returned ${res?.statusCode ?? "error"}: ${res?.error ?? ""}`);
+      qc.invalidateQueries({ queryKey: ["integration-dispatches", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["integration-status", workspaceId] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Ping failed"),
+  });
+
+  const retry = useMutation({
+    mutationFn: (dispatchId: string) => retryFn({ data: { dispatchId } }),
+    onSuccess: (res: any) => {
+      if (res?.ok) toast.success("Retry succeeded");
+      else toast.error(`Retry failed: ${res?.error ?? res?.statusCode ?? "unknown"}`);
+      qc.invalidateQueries({ queryKey: ["integration-dispatches", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["integration-status", workspaceId] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Retry failed"),
+  });
+
   const webhookUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/api/public/integrations/tess/inbound`
@@ -101,10 +134,34 @@ function IntegrationsPage() {
 
         <section className="rounded-lg border border-border/60 p-5 space-y-4">
           <div>
-            <h2 className="text-base font-medium">Total Event System Solutions</h2>
-            <p className="text-sm text-muted-foreground">
-              Sync TESS events into a board here, and push WorkPlanOS status changes back.
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-base font-medium">Total Event System Solutions</h2>
+                <p className="text-sm text-muted-foreground">
+                  Sync TESS events into a board here, and push WorkPlanOS status changes back.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={ping.isPending || !integQ.data?.enabled}
+                onClick={() => ping.mutate()}
+              >
+                <PlugZap className="h-3.5 w-3.5 mr-1.5" />
+                Test connection
+              </Button>
+            </div>
+            {statusQ.data && (
+              <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
+                <StatusTile label="Last inbound" value={statusQ.data.lastInbound} />
+                <StatusTile label="Last outbound" value={statusQ.data.lastOutbound} />
+                <StatusTile
+                  label="Failed dispatches"
+                  value={String(statusQ.data.failedCount)}
+                  tone={statusQ.data.failedCount > 0 ? "warn" : "ok"}
+                />
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -238,13 +295,53 @@ function IntegrationsPage() {
                   >
                     {d.status_code ?? "—"}
                   </span>
-                  {d.error && <span className="text-red-500 truncate">{d.error}</span>}
+                  {d.error && (
+                    <span className="text-red-500 truncate flex-1" title={d.error}>
+                      {d.error}
+                    </span>
+                  )}
+                  {d.direction === "outbound" && (d.error || (d.status_code ?? 0) >= 400) && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 ml-auto"
+                      disabled={retry.isPending}
+                      onClick={() => retry.mutate(d.id)}
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Retry
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </section>
       </div>
+    </div>
+  );
+}
+
+function StatusTile({
+  label,
+  value,
+  tone = "ok",
+}: {
+  label: string;
+  value: string | null;
+  tone?: "ok" | "warn";
+}) {
+  const display =
+    value && /^\d{4}-/.test(value) ? new Date(value).toLocaleString() : value ?? "Never";
+  return (
+    <div
+      className={
+        "rounded-md border border-border/60 px-3 py-2 " +
+        (tone === "warn" ? "bg-amber-500/5" : "bg-muted/30")
+      }
+    >
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-xs font-medium mt-0.5">{display}</div>
     </div>
   );
 }

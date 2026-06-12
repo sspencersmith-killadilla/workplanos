@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
   useMutation,
-  useQueries,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -642,6 +641,3 @@ function AddWidgetDialog(props: {
     </Dialog>
   );
 }
-
-// Avoid unused import warnings for useQueries when tree-shaken in dev
-void useQueries;

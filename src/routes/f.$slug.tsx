@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -31,7 +31,6 @@ type FormField = {
 
 function PublicFormPage() {
   const { slug } = Route.useParams();
-  const router = useRouter();
   const getFormFn = useServerFn(getPublicForm);
   const submitFn = useServerFn(submitPublicForm);
 
@@ -227,6 +226,3 @@ function PublicFormPage() {
     </div>
   );
 }
-
-// silence unused router warning if tree-shaken
-void useRouter;

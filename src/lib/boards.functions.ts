@@ -433,6 +433,71 @@ export const upsertValue = createServerFn({ method: "POST" })
       .upsert(payload, { onConflict: "item_id,column_id" });
     if (error) throw new Error(error.message);
 
+    // Outbound dispatch — fire-and-forget to TESS if this item is linked
+    try {
+      const { data: ref } = await context.supabase
+        .from("item_external_refs")
+        .select("source, external_id")
+        .eq("item_id", itemId)
+        .maybeSingle();
+      if (ref && ref.source === "tess") {
+        const { data: item } = await context.supabase
+          .from("items")
+          .select("board_id, title, board:boards(workspace_id)")
+          .eq("id", itemId)
+          .single();
+        const wsId = (item as any)?.board?.workspace_id;
+        if (wsId) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: integ } = await supabaseAdmin
+            .from("workspace_integrations")
+            .select("tess_base_url, shared_secret, enabled")
+            .eq("workspace_id", wsId)
+            .eq("kind", "tess")
+            .maybeSingle();
+          if (integ?.enabled && integ.tess_base_url) {
+            const body = JSON.stringify({
+              type: "item.updated",
+              external_id: ref.external_id,
+              title: (item as any)?.title,
+              changes: { columnId, ...rest },
+            });
+            const { createHmac } = await import("crypto");
+            const sig = createHmac("sha256", integ.shared_secret).update(body).digest("hex");
+            const url = `${integ.tess_base_url.replace(/\/$/, "")}/api/public/integrations/wpo/inbound`;
+            let statusCode: number | null = null;
+            let err: string | null = null;
+            try {
+              const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                  "x-wpo-workspace": wsId,
+                  "x-wpo-signature": `sha256=${sig}`,
+                },
+                body,
+              });
+              statusCode = res.status;
+              if (!res.ok) err = await res.text().catch(() => null);
+            } catch (e: any) {
+              err = e?.message ?? "fetch failed";
+            }
+            await supabaseAdmin.from("integration_dispatches").insert({
+              workspace_id: wsId,
+              item_id: itemId,
+              direction: "outbound",
+              payload: JSON.parse(body),
+              status_code: statusCode,
+              error: err,
+              attempts: 1,
+            });
+          }
+        }
+      }
+    } catch {
+      // never block a value update on external sync
+    }
+
     // Run synchronous automations matching this status change
     if (rest.status_option_id !== undefined) {
       try {

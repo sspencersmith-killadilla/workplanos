@@ -293,6 +293,16 @@ export const updateItem = createServerFn({ method: "POST" })
     if (groupId !== undefined) patch.group_id = groupId;
     const { error } = await context.supabase.from("items").update(patch as any).eq("id", id);
     if (error) throw new Error(error.message);
+    if (rest.title !== undefined) {
+      await context.supabase
+        .from("item_activity")
+        .insert({ item_id: id, actor_id: context.userId, kind: "title_changed", payload: { title: rest.title } });
+    }
+    if (groupId !== undefined) {
+      await context.supabase
+        .from("item_activity")
+        .insert({ item_id: id, actor_id: context.userId, kind: "group_changed", payload: { groupId } });
+    }
     return { ok: true };
   });
 

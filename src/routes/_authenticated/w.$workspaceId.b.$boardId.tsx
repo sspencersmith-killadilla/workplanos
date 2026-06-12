@@ -14,6 +14,7 @@ import {
   CircleDot,
   Users,
   Link2,
+  Expand,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -43,6 +44,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { KanbanView, CalendarView, WorkloadView } from "@/components/board/views";
+import { ItemDrawer } from "@/components/board/item-drawer";
 
 export const Route = createFileRoute("/_authenticated/w/$workspaceId/b/$boardId")({
   component: BoardCanvas,
@@ -148,6 +150,7 @@ function BoardCanvas() {
 
   const tableView = views.find((v) => v.kind === "table") ?? views[0];
   const [activeViewId, setActiveViewId] = useState<string | null>(tableView?.id ?? null);
+  const [drawerItemId, setDrawerItemId] = useState<string | null>(null);
   const activeView =
     views.find((v) => v.id === activeViewId) ?? tableView ?? { id: "", kind: "table", name: "Table" };
 
@@ -214,6 +217,7 @@ function BoardCanvas() {
               onDeleteColumn={(id) =>
                 deleteColumnFn({ data: { id } }).then(invalidate)
               }
+              onOpenItem={setDrawerItemId}
             />
           ))}
 
@@ -236,6 +240,7 @@ function BoardCanvas() {
             columns={columns}
             values={valuesByItem}
             onUpsertValue={(p) => upsertValueFn({ data: p }).then(invalidate)}
+            onOpenItem={setDrawerItemId}
           />
         </div>
       )}
@@ -251,6 +256,7 @@ function BoardCanvas() {
           <WorkloadView items={allItems} columns={columns} values={valuesByItem} />
         </div>
       )}
+      <ItemDrawer itemId={drawerItemId} onClose={() => setDrawerItemId(null)} />
     </div>
   );
 }
@@ -270,6 +276,7 @@ function GroupSection(props: {
   onUpsertValue: (p: any) => Promise<unknown>;
   onAddColumn: (kind: string, title: string) => void;
   onDeleteColumn: (id: string) => void;
+  onOpenItem: (id: string) => void;
 }) {
   const { group, columns, items, values } = props;
   const collapsed = group.collapsed;
@@ -373,6 +380,13 @@ function GroupSection(props: {
                 <tr key={it.id} className="border-t border-border/40 hover:bg-muted/20 group">
                   <td className="px-3 py-1.5 sticky left-0 bg-background z-10 border-r border-border/40 group-hover:bg-muted/20">
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => props.onOpenItem(it.id)}
+                        className="opacity-0 group-hover:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
+                        aria-label="Open item"
+                      >
+                        <Expand className="h-3 w-3" />
+                      </button>
                       <InlineEdit
                         value={it.title}
                         onSave={(v) => props.onUpdateItem(it.id, v)}

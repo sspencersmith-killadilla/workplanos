@@ -1,3 +1,23 @@
+
+## Admin features
+
+### Workspace admin (owners + admins)
+- Workspace **Members** page: invite by email, change roles, remove people, and **lock** a member inside the workspace. Locked members keep their account but their items, comments, and files are hidden from the rest of that workspace until you unlock them.
+
+### Site super-admin
+- A super-admin sees a **shield** icon in the workspace sidebar that links to `/admin`.
+- **Users tab:** search every account, lock/unlock globally (signs the user out and hides their content everywhere), grant or revoke the super-admin role.
+- **Platform settings tab:** store a shared AI provider + API key for AI features (used by future AI functionality; safe to leave blank).
+
+### Bootstrapping the first super-admin
+There is no super-admin out of the box. After your first account exists, run this once against the database (replace the email):
+
+```sql
+insert into public.user_roles (user_id, role)
+select id, 'super_admin' from auth.users where email = 'you@example.com';
+```
+
+You will then see the shield icon and be able to grant the role to others from the UI.
 # User Guide
 
 A workspace-based work-management platform with boards, items, views, forms, automations and dashboards. This guide covers self-hosted installation (without Lovable) and end-user operation of every feature.

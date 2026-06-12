@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -15,6 +15,7 @@ import {
   Users,
   Link2,
   Expand,
+  FileText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -184,6 +185,13 @@ function BoardCanvas() {
             </button>
           ))}
         </div>
+        <Link
+          to="/w/$workspaceId/b/$boardId/forms"
+          params={{ workspaceId, boardId }}
+          className="ml-3 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+        >
+          <FileText className="h-3.5 w-3.5" /> Forms
+        </Link>
       </div>
 
       {activeView.kind === "table" && (

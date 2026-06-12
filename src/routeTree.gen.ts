@@ -12,10 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authenticated/w.$workspaceId'
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId'
+import { Route as AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.forms'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -29,6 +31,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FSlugRoute = FSlugRouteImport.update({
+  id: '/f/$slug',
+  path: '/f/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
@@ -54,21 +61,31 @@ const AuthenticatedWWorkspaceIdBBoardIdRoute =
     path: '/b/$boardId',
     getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
   } as any)
+const AuthenticatedWWorkspaceIdBBoardIdFormsRoute =
+  AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport.update({
+    id: '/forms',
+    path: '/forms',
+    getParentRoute: () => AuthenticatedWWorkspaceIdBBoardIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/app': typeof AuthenticatedAppRoute
+  '/f/$slug': typeof FSlugRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
-  '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRoute
+  '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
+  '/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/app': typeof AuthenticatedAppRoute
+  '/f/$slug': typeof FSlugRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdIndexRoute
-  '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRoute
+  '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
+  '/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -76,9 +93,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/f/$slug': typeof FSlugRoute
   '/_authenticated/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/_authenticated/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
-  '/_authenticated/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRoute
+  '/_authenticated/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
+  '/_authenticated/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -86,26 +105,38 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/app'
+    | '/f/$slug'
     | '/w/$workspaceId'
     | '/w/$workspaceId/'
     | '/w/$workspaceId/b/$boardId'
+    | '/w/$workspaceId/b/$boardId/forms'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/app' | '/w/$workspaceId' | '/w/$workspaceId/b/$boardId'
+  to:
+    | '/'
+    | '/auth'
+    | '/app'
+    | '/f/$slug'
+    | '/w/$workspaceId'
+    | '/w/$workspaceId/b/$boardId'
+    | '/w/$workspaceId/b/$boardId/forms'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/app'
+    | '/f/$slug'
     | '/_authenticated/w/$workspaceId'
     | '/_authenticated/w/$workspaceId/'
     | '/_authenticated/w/$workspaceId/b/$boardId'
+    | '/_authenticated/w/$workspaceId/b/$boardId/forms'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  FSlugRoute: typeof FSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -129,6 +160,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/f/$slug': {
+      id: '/f/$slug'
+      path: '/f/$slug'
+      fullPath: '/f/$slug'
+      preLoaderRoute: typeof FSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/app': {
@@ -159,19 +197,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdRoute
     }
+    '/_authenticated/w/$workspaceId/b/$boardId/forms': {
+      id: '/_authenticated/w/$workspaceId/b/$boardId/forms'
+      path: '/forms'
+      fullPath: '/w/$workspaceId/b/$boardId/forms'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport
+      parentRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRoute
+    }
   }
 }
 
+interface AuthenticatedWWorkspaceIdBBoardIdRouteChildren {
+  AuthenticatedWWorkspaceIdBBoardIdFormsRoute: typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
+}
+
+const AuthenticatedWWorkspaceIdBBoardIdRouteChildren: AuthenticatedWWorkspaceIdBBoardIdRouteChildren =
+  {
+    AuthenticatedWWorkspaceIdBBoardIdFormsRoute:
+      AuthenticatedWWorkspaceIdBBoardIdFormsRoute,
+  }
+
+const AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren =
+  AuthenticatedWWorkspaceIdBBoardIdRoute._addFileChildren(
+    AuthenticatedWWorkspaceIdBBoardIdRouteChildren,
+  )
+
 interface AuthenticatedWWorkspaceIdRouteChildren {
   AuthenticatedWWorkspaceIdIndexRoute: typeof AuthenticatedWWorkspaceIdIndexRoute
-  AuthenticatedWWorkspaceIdBBoardIdRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRoute
+  AuthenticatedWWorkspaceIdBBoardIdRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
 }
 
 const AuthenticatedWWorkspaceIdRouteChildren: AuthenticatedWWorkspaceIdRouteChildren =
   {
     AuthenticatedWWorkspaceIdIndexRoute: AuthenticatedWWorkspaceIdIndexRoute,
     AuthenticatedWWorkspaceIdBBoardIdRoute:
-      AuthenticatedWWorkspaceIdBBoardIdRoute,
+      AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren,
   }
 
 const AuthenticatedWWorkspaceIdRouteWithChildren =
@@ -196,17 +256,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  FSlugRoute: FSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

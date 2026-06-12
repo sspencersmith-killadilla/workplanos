@@ -17,6 +17,8 @@ import {
   Expand,
   FileText,
   Zap,
+  Share2,
+  Copy,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -32,6 +34,10 @@ import {
   upsertValue,
   updateBoard,
 } from "@/lib/boards.functions";
+import { getBoardEmbedToken, setBoardEmbedEnabled } from "@/lib/integrations.functions";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -225,6 +231,8 @@ export function BoardCanvas({
         >
           <Zap className="h-3.5 w-3.5" /> Automations
         </Link>
+
+        <ShareEmbedButton boardId={boardId} />
       </div>
 
       {activeView.kind === "table" && (
@@ -717,5 +725,103 @@ function AddColumnMenu({ onAdd }: { onAdd: (kind: string, title: string) => void
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function ShareEmbedButton({ boardId }: { boardId: string }) {
+  const qc = useQueryClient();
+  const getTokenFn = useServerFn(getBoardEmbedToken);
+  const setEnabledFn = useServerFn(setBoardEmbedEnabled);
+
+  const tokenQ = useQuery({
+    queryKey: ["board-embed-token", boardId],
+    queryFn: () => getTokenFn({ data: { boardId } }),
+  });
+
+  const toggle = async (enabled: boolean) => {
+    try {
+      await setEnabledFn({ data: { boardId, enabled } });
+      await qc.invalidateQueries({ queryKey: ["board-embed-token", boardId] });
+      toast.success(enabled ? "Embed enabled" : "Embed disabled");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not update embed");
+    }
+  };
+
+  const token = tokenQ.data?.embed_token ?? null;
+  const enabled = Boolean(token);
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const embedUrl = enabled ? `${origin}/embed/b/${boardId}?token=${token}` : "";
+  const snippet = enabled
+    ? `<iframe src="${embedUrl}" style="width:100%;height:600px;border:0;border-radius:12px"></iframe>`
+    : "";
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50">
+          <Share2 className="h-3.5 w-3.5" /> Share
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-96 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-medium">Embed this board</div>
+            <div className="text-xs text-muted-foreground">
+              Read-only iframe view. Use it to embed inside TESS or any other site.
+            </div>
+          </div>
+          <Switch checked={enabled} onCheckedChange={toggle} />
+        </div>
+
+        {enabled && (
+          <>
+            <div className="space-y-1">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Embed URL
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-[11px] break-all bg-muted/40 rounded p-2">
+                  {embedUrl}
+                </code>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    navigator.clipboard.writeText(embedUrl);
+                    toast.success("Copied");
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                iframe snippet
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-[11px] break-all bg-muted/40 rounded p-2">
+                  {snippet}
+                </code>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    navigator.clipboard.writeText(snippet);
+                    toast.success("Copied");
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Rotating or disabling the token will immediately break existing embeds.
+            </p>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }

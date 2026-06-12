@@ -52,6 +52,20 @@ export const Route = createFileRoute("/api/public/integrations/tess/inbound")({
           return new Response("Invalid signature", { status: 401 });
         }
 
+        // Lightweight health check from the TESS side
+        let preview: any;
+        try { preview = JSON.parse(raw); } catch { preview = null; }
+        if (preview?.type === "ping") {
+          await supabaseAdmin.from("integration_dispatches").insert({
+            workspace_id: integ.workspace_id,
+            item_id: null,
+            direction: "inbound",
+            payload: { type: "ping" } as any,
+            status_code: 200,
+          });
+          return Response.json({ ok: true, pong: true });
+        }
+
         let parsed: z.infer<typeof payloadSchema>;
         try {
           parsed = payloadSchema.parse(JSON.parse(raw));

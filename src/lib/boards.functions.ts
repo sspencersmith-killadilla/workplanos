@@ -297,6 +297,24 @@ export const updateItem = createServerFn({ method: "POST" })
       await context.supabase
         .from("item_activity")
         .insert({ item_id: id, actor_id: context.userId, kind: "title_changed", payload: { title: rest.title } });
+      // Outbound: notify TESS when a linked item is renamed
+      try {
+        const { dispatchToTess, externalRefForItem, workspaceIdForItem } = await import(
+          "./tess-dispatch.server"
+        );
+        const ref = await externalRefForItem(id);
+        if (ref?.source === "tess") {
+          const wsId = await workspaceIdForItem(id);
+          if (wsId) {
+            await dispatchToTess({
+              workspaceId: wsId,
+              itemId: id,
+              type: "item.renamed",
+              body: { external_id: ref.external_id, title: rest.title },
+            });
+          }
+        }
+      } catch {}
     }
     if (groupId !== undefined) {
       await context.supabase
@@ -310,8 +328,32 @@ export const deleteItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    // Capture link info BEFORE delete so we can notify TESS
+    let tessRef: { external_id: string } | null = null;
+    let wsId: string | null = null;
+    try {
+      const { externalRefForItem, workspaceIdForItem } = await import("./tess-dispatch.server");
+      const ref = await externalRefForItem(data.id);
+      if (ref?.source === "tess") {
+        tessRef = { external_id: ref.external_id };
+        wsId = await workspaceIdForItem(data.id);
+      }
+    } catch {}
+
     const { error } = await context.supabase.from("items").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    if (tessRef && wsId) {
+      try {
+        const { dispatchToTess } = await import("./tess-dispatch.server");
+        await dispatchToTess({
+          workspaceId: wsId,
+          itemId: null,
+          type: "item.deleted",
+          body: { external_id: tessRef.external_id },
+        });
+      } catch {}
+    }
     return { ok: true };
   });
 
@@ -435,63 +477,53 @@ export const upsertValue = createServerFn({ method: "POST" })
 
     // Outbound dispatch — fire-and-forget to TESS if this item is linked
     try {
-      const { data: ref } = await context.supabase
-        .from("item_external_refs")
-        .select("source, external_id")
-        .eq("item_id", itemId)
-        .maybeSingle();
-      if (ref && ref.source === "tess") {
-        const { data: item } = await context.supabase
-          .from("items")
-          .select("board_id, title, board:boards(workspace_id)")
-          .eq("id", itemId)
-          .single();
-        const wsId = (item as any)?.board?.workspace_id;
+      const { dispatchToTess, externalRefForItem, workspaceIdForItem } = await import(
+        "./tess-dispatch.server"
+      );
+      const ref = await externalRefForItem(itemId);
+      if (ref?.source === "tess") {
+        const wsId = await workspaceIdForItem(itemId);
         if (wsId) {
+          // Resolve human-friendly fields for typed events
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { data: integ } = await supabaseAdmin
-            .from("workspace_integrations")
-            .select("tess_base_url, shared_secret, enabled")
-            .eq("workspace_id", wsId)
-            .eq("kind", "tess")
+          const { data: col } = await supabaseAdmin
+            .from("board_columns")
+            .select("kind, title, settings")
+            .eq("id", columnId)
             .maybeSingle();
-          if (integ?.enabled && integ.tess_base_url) {
-            const body = JSON.stringify({
-              type: "item.updated",
-              external_id: ref.external_id,
-              title: (item as any)?.title,
-              changes: { columnId, ...rest },
-            });
-            const { createHmac } = await import("crypto");
-            const sig = createHmac("sha256", integ.shared_secret).update(body).digest("hex");
-            const url = `${integ.tess_base_url.replace(/\/$/, "")}/api/public/integrations/wpo/inbound`;
-            let statusCode: number | null = null;
-            let err: string | null = null;
-            try {
-              const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                  "content-type": "application/json",
-                  "x-wpo-workspace": wsId,
-                  "x-wpo-signature": `sha256=${sig}`,
-                },
-                body,
-              });
-              statusCode = res.status;
-              if (!res.ok) err = await res.text().catch(() => null);
-            } catch (e: any) {
-              err = e?.message ?? "fetch failed";
+
+          let type: "item.updated" | "item.status_changed" | "item.assignee_changed" =
+            "item.updated";
+          const changes: Record<string, unknown> = { columnId, columnTitle: col?.title };
+
+          if (col?.kind === "status" && rest.status_option_id !== undefined) {
+            type = "item.status_changed";
+            const options: any[] = (col.settings as any)?.options ?? [];
+            const match = options.find((o) => o.id === rest.status_option_id);
+            changes.status_option_id = rest.status_option_id;
+            changes.status_label = match?.label ?? null;
+          } else if (col?.kind === "people" && rest.people_user_ids !== undefined) {
+            type = "item.assignee_changed";
+            const ids = rest.people_user_ids ?? [];
+            if (ids.length > 0) {
+              const { data: profs } = await supabaseAdmin
+                .from("profiles")
+                .select("id, email")
+                .in("id", ids);
+              changes.assignee_emails = (profs ?? []).map((p: any) => p.email).filter(Boolean);
+            } else {
+              changes.assignee_emails = [];
             }
-            await supabaseAdmin.from("integration_dispatches").insert({
-              workspace_id: wsId,
-              item_id: itemId,
-              direction: "outbound",
-              payload: JSON.parse(body),
-              status_code: statusCode,
-              error: err,
-              attempts: 1,
-            });
+          } else {
+            Object.assign(changes, rest);
           }
+
+          await dispatchToTess({
+            workspaceId: wsId,
+            itemId,
+            type,
+            body: { external_id: ref.external_id, changes },
+          });
         }
       }
     } catch {

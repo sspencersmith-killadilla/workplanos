@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate, useParams } from "@tanstack
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard } from "lucide-react";
+import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getWorkspace } from "@/lib/workspaces.functions";
 import { listBoards, createBoard } from "@/lib/boards.functions";

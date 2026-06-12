@@ -231,6 +231,8 @@ export function BoardCanvas({
         >
           <Zap className="h-3.5 w-3.5" /> Automations
         </Link>
+
+        <ShareEmbedButton boardId={boardId} />
       </div>
 
       {activeView.kind === "table" && (

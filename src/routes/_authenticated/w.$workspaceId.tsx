@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate, useParams } from "@tanstack
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings } from "lucide-react";
+import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getWorkspace } from "@/lib/workspaces.functions";
 import { listBoards, createBoard } from "@/lib/boards.functions";
@@ -64,6 +64,9 @@ function WorkspaceShell() {
 
   const params = useParams({ strict: false }) as { boardId?: string };
   const activeBoardId = params.boardId;
+  const isDashboards =
+    typeof window !== "undefined" &&
+    window.location.pathname.endsWith("/dashboards");
 
   return (
     <div className="h-screen w-screen flex bg-background text-foreground overflow-hidden">
@@ -80,6 +83,17 @@ function WorkspaceShell() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 py-3">
+          <Link
+            to="/w/$workspaceId/dashboards"
+            params={{ workspaceId }}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors mb-2",
+              isDashboards && "bg-muted text-foreground",
+            )}
+          >
+            <LayoutDashboard className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Dashboards</span>
+          </Link>
           <div className="flex items-center justify-between px-2 mb-1">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Boards

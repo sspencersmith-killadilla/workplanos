@@ -2,7 +2,8 @@ import { createFileRoute, Link, Outlet, useNavigate, useParams } from "@tanstack
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users } from "lucide-react";
+import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users, User } from "lucide-react";
+import { InboxBell } from "@/components/InboxBell";
 import { supabase } from "@/integrations/supabase/client";
 import { getWorkspace } from "@/lib/workspaces.functions";
 import { listBoards, createBoard } from "@/lib/boards.functions";
@@ -188,6 +189,14 @@ function WorkspaceShell() {
             >
               <BookOpen className="h-3.5 w-3.5" />
             </a>
+            <InboxBell />
+            <Link
+              to="/account"
+              className="h-7 w-7 grid place-items-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
+              title="Account"
+            >
+              <User className="h-3.5 w-3.5" />
+            </Link>
           </div>
           <button className="h-7 w-7 grid place-items-center rounded-md hover:bg-muted text-muted-foreground">
             <Settings className="h-3.5 w-3.5" />

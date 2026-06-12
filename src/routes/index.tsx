@@ -84,6 +84,34 @@ function Index() {
         </div>
       </section>
 
+      <section id="tips" className="py-20 border-t border-border/60">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">Tips &amp; tricks</h2>
+              <p className="mt-2 text-muted-foreground">Small habits that make WorkPlanOS feel effortless.</p>
+            </div>
+            <Link to="/help" className="hidden sm:inline-flex items-center gap-1.5 text-sm text-primary hover:opacity-80">
+              Open user manual <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              { title: "Search anything", body: "Press / from anywhere to jump to a board, item, or member in one keystroke." },
+              { title: "Status drives Kanban", body: "Add a Status column to any board and the Kanban view appears automatically." },
+              { title: "Forms = inbox", body: "Publish a form to capture intake from people who don't have an account." },
+              { title: "Automate the boring", body: "When status changes → notify or move the item. No code required." },
+            ].map((t) => (
+              <div key={t.title} className="rounded-xl border border-border bg-card p-5">
+                <div className="text-xs font-semibold uppercase tracking-widest text-primary">Tip</div>
+                <h3 className="mt-2 font-semibold tracking-tight">{t.title}</h3>
+                <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{t.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <footer className="border-t border-border/60 py-10">
         <div className="mx-auto max-w-6xl px-6 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">

@@ -176,6 +176,23 @@ export const pingTess = createServerFn({ method: "POST" })
       _roles: ["owner"],
     });
     if (!ok) throw new Error("Only workspace owners can test the integration");
+    // Surface specific missing fields to the caller
+    const { data: integ } = await context.supabase
+      .from("workspace_integrations")
+      .select("enabled, tess_base_url, shared_secret")
+      .eq("workspace_id", data.workspaceId)
+      .eq("kind", "tess")
+      .maybeSingle();
+    const missing: string[] = [];
+    if (!integ) missing.push("integration row");
+    else {
+      if (!integ.enabled) missing.push("enabled");
+      if (!integ.tess_base_url) missing.push("TESS base URL");
+      if (!integ.shared_secret) missing.push("shared secret");
+    }
+    if (missing.length) {
+      return { skipped: true as const, missing };
+    }
     const { dispatchToTess } = await import("./tess-dispatch.server");
     const res = await dispatchToTess({
       workspaceId: data.workspaceId,

@@ -12,8 +12,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in · WorkOS" },
-      { name: "description", content: "Sign in or create your WorkOS account." },
+      { title: "Sign in · WorkPlanOS" },
+      { name: "description", content: "Sign in or create your WorkPlanOS account." },
     ],
   }),
   component: AuthPage,
@@ -80,13 +80,10 @@ function AuthPage() {
       <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-primary/10 via-background to-background border-r border-border/60">
         <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground font-bold">W</div>
-          WorkOS
+          WorkPlanOS
         </Link>
         <div>
-          <blockquote className="text-2xl font-medium tracking-tight leading-snug max-w-md">
-            “We replaced four tools with WorkOS in a week. The team actually <span className="text-primary">enjoys</span> using it.”
-          </blockquote>
-          <p className="mt-4 text-sm text-muted-foreground">— Engineering lead at a 40-person SaaS</p>
+          <TipOfTheDay />
         </div>
       </div>
       <div className="flex items-center justify-center p-6">

@@ -23,6 +23,7 @@ import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authent
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
 import { Route as AuthenticatedWWorkspaceIdMembersRouteImport } from './routes/_authenticated/w.$workspaceId.members'
 import { Route as AuthenticatedWWorkspaceIdDashboardsRouteImport } from './routes/_authenticated/w.$workspaceId.dashboards'
+import { Route as ApiPublicIntegrationsTessInboundRouteImport } from './routes/api/public/integrations/tess/inbound'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.index'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.forms'
@@ -101,6 +102,12 @@ const AuthenticatedWWorkspaceIdDashboardsRoute =
     path: '/dashboards',
     getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
   } as any)
+const ApiPublicIntegrationsTessInboundRoute =
+  ApiPublicIntegrationsTessInboundRouteImport.update({
+    id: '/api/public/integrations/tess/inbound',
+    path: '/api/public/integrations/tess/inbound',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedWWorkspaceIdBBoardIdRoute =
   AuthenticatedWWorkspaceIdBBoardIdRouteImport.update({
     id: '/b/$boardId',
@@ -141,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
+  '/api/public/integrations/tess/inbound': typeof ApiPublicIntegrationsTessInboundRoute
   '/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
   '/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
   '/w/$workspaceId/b/$boardId/': typeof AuthenticatedWWorkspaceIdBBoardIdIndexRoute
@@ -158,6 +166,7 @@ export interface FileRoutesByTo {
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
   '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdIndexRoute
+  '/api/public/integrations/tess/inbound': typeof ApiPublicIntegrationsTessInboundRoute
   '/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
   '/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdIndexRoute
@@ -179,6 +188,7 @@ export interface FileRoutesById {
   '/_authenticated/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/_authenticated/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/_authenticated/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
+  '/api/public/integrations/tess/inbound': typeof ApiPublicIntegrationsTessInboundRoute
   '/_authenticated/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
   '/_authenticated/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
   '/_authenticated/w/$workspaceId/b/$boardId/': typeof AuthenticatedWWorkspaceIdBBoardIdIndexRoute
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/w/$workspaceId/members'
     | '/w/$workspaceId/'
     | '/w/$workspaceId/b/$boardId'
+    | '/api/public/integrations/tess/inbound'
     | '/w/$workspaceId/b/$boardId/automations'
     | '/w/$workspaceId/b/$boardId/forms'
     | '/w/$workspaceId/b/$boardId/'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/w/$workspaceId/dashboards'
     | '/w/$workspaceId/members'
     | '/w/$workspaceId'
+    | '/api/public/integrations/tess/inbound'
     | '/w/$workspaceId/b/$boardId/automations'
     | '/w/$workspaceId/b/$boardId/forms'
     | '/w/$workspaceId/b/$boardId'
@@ -237,6 +249,7 @@ export interface FileRouteTypes {
     | '/_authenticated/w/$workspaceId/members'
     | '/_authenticated/w/$workspaceId/'
     | '/_authenticated/w/$workspaceId/b/$boardId'
+    | '/api/public/integrations/tess/inbound'
     | '/_authenticated/w/$workspaceId/b/$boardId/automations'
     | '/_authenticated/w/$workspaceId/b/$boardId/forms'
     | '/_authenticated/w/$workspaceId/b/$boardId/'
@@ -249,6 +262,7 @@ export interface RootRouteChildren {
   HelpRoute: typeof HelpRoute
   FSlugRoute: typeof FSlugRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  ApiPublicIntegrationsTessInboundRoute: typeof ApiPublicIntegrationsTessInboundRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -351,6 +365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdDashboardsRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdRoute
     }
+    '/api/public/integrations/tess/inbound': {
+      id: '/api/public/integrations/tess/inbound'
+      path: '/api/public/integrations/tess/inbound'
+      fullPath: '/api/public/integrations/tess/inbound'
+      preLoaderRoute: typeof ApiPublicIntegrationsTessInboundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/w/$workspaceId/b/$boardId': {
       id: '/_authenticated/w/$workspaceId/b/$boardId'
       path: '/b/$boardId'
@@ -452,7 +473,18 @@ const rootRouteChildren: RootRouteChildren = {
   HelpRoute: HelpRoute,
   FSlugRoute: FSlugRoute,
   InviteTokenRoute: InviteTokenRoute,
+  ApiPublicIntegrationsTessInboundRoute: ApiPublicIntegrationsTessInboundRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

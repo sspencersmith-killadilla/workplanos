@@ -16,6 +16,7 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authenticated/w.$workspaceId'
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
@@ -57,6 +58,11 @@ const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/account': typeof AuthenticatedAccountRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/app': typeof AuthenticatedAppRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/account': typeof AuthenticatedAccountRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/app': typeof AuthenticatedAppRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/account'
+    | '/admin'
     | '/app'
     | '/inbox'
     | '/f/$slug'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/account'
+    | '/admin'
     | '/app'
     | '/inbox'
     | '/f/$slug'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/account'
+    | '/_authenticated/admin'
     | '/_authenticated/app'
     | '/_authenticated/inbox'
     | '/f/$slug'
@@ -264,6 +276,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AuthenticatedAppRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/account': {
@@ -368,6 +387,7 @@ const AuthenticatedWWorkspaceIdRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAppRoute: typeof AuthenticatedAppRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedWWorkspaceIdRoute: typeof AuthenticatedWWorkspaceIdRouteWithChildren
@@ -375,6 +395,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAppRoute: AuthenticatedAppRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedWWorkspaceIdRoute: AuthenticatedWWorkspaceIdRouteWithChildren,
@@ -393,3 +414,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

@@ -19,7 +19,7 @@ export async function dispatchToTess(args: {
   try {
     const { data: integ } = await supabaseAdmin
       .from("workspace_integrations")
-      .select("tess_base_url, shared_secret, enabled")
+      .select("tess_base_url, tess_workspace_id, shared_secret, enabled")
       .eq("workspace_id", workspaceId)
       .eq("kind", "tess")
       .maybeSingle();
@@ -39,6 +39,8 @@ export async function dispatchToTess(args: {
         method: "POST",
         headers: {
           "content-type": "application/json",
+          // TESS expects this header to identify the department/connection on its side
+          "x-wpo-department": integ.tess_workspace_id ?? workspaceId,
           "x-wpo-workspace": workspaceId,
           "x-wpo-signature": `sha256=${sig}`,
         },

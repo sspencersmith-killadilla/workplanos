@@ -162,13 +162,6 @@ const SECTIONS: Section[] = [
     id: "shortcuts",
     title: "Keyboard shortcuts",
     body: (
-      <></>
-    ),
-  },
-  {
-    id: "tess-integration",
-    title: "Total Event System Solutions integration",
-    body: (
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b border-border">
@@ -183,6 +176,47 @@ const SECTIONS: Section[] = [
           <tr><td className="py-2"><kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Save a field while editing</td></tr>
         </tbody>
       </table>
+    ),
+  },
+  {
+    id: "tess-integration",
+    title: "Total Event System Solutions integration",
+    body: (
+      <>
+        <p>
+          WorkPlanOS can two-way sync with <strong>Total Event System Solutions (TESS)</strong> so events and gigs created in TESS appear as items on a board here, and status / assignment changes you make in WorkPlanOS push back to TESS in real time.
+        </p>
+        <h3 className="text-base font-semibold mt-5">Set it up</h3>
+        <ol>
+          <li>Open your workspace sidebar and click <em>Integrations</em>.</li>
+          <li>Under <em>Total Event System Solutions</em>, pick the <strong>target board</strong> that should receive TESS events.</li>
+          <li>Paste your TESS <strong>base URL</strong> (e.g. <code>https://totaleventsystemsolutions.lovable.app</code>) so WorkPlanOS knows where to send outbound updates.</li>
+          <li>Click <em>Create + generate secret</em>. Copy the shared secret immediately — it is only shown once.</li>
+          <li>In TESS, paste the WorkPlanOS <strong>webhook URL</strong> shown on the same page, along with the secret.</li>
+        </ol>
+        <p className="tip">
+          <strong>Column mapping is by name.</strong> For the sync to fill in fields, your target board should have columns titled <em>Title</em>, <em>Date</em>, <em>Venue</em>, <em>Status</em>, and <em>Assignee</em>. Missing columns are skipped quietly — the item is still created.
+        </p>
+        <h3 className="text-base font-semibold mt-5">How the sync works</h3>
+        <ul>
+          <li><strong>TESS → WorkPlanOS:</strong> when an event is created, updated, cancelled, or a gig is assigned, TESS sends a signed webhook. WorkPlanOS upserts the matching item so re-deliveries don't create duplicates.</li>
+          <li><strong>WorkPlanOS → TESS:</strong> when you change a value on an item that came from TESS, WorkPlanOS POSTs the change back to TESS. Failures are logged with a retry timer.</li>
+          <li><strong>Assignees</strong> are matched by email — the person must exist as a workspace member here for the assignment to stick.</li>
+        </ul>
+        <h3 className="text-base font-semibold mt-5">Recent sync activity</h3>
+        <p>
+          The bottom of the Integrations page shows the most recent sync attempts in both directions, with timestamp, HTTP status, and any error message. Use it to confirm a webhook landed or to diagnose a failed push.
+        </p>
+        <h3 className="text-base font-semibold mt-5">Embedding a board inside TESS</h3>
+        <ol>
+          <li>Open the board you want to embed and turn on <em>Enable embed</em> in board settings to generate a token.</li>
+          <li>Drop this into TESS: <code>&lt;iframe src="https://workplanos.lovable.app/embed/b/&lt;boardId&gt;?token=&lt;token&gt;"&gt;</code></li>
+          <li>The embed is <strong>read-only</strong>, has no sidebar, and only loads inside approved TESS hosts.</li>
+        </ol>
+        <p className="tip">
+          <strong>Rotating the secret</strong> immediately invalidates the old one. Update TESS with the new value or inbound webhooks will start failing with a 401.
+        </p>
+      </>
     ),
   },
 ];

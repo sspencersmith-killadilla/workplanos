@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate, useParams } from "@tanstack
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen } from "lucide-react";
+import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getWorkspace } from "@/lib/workspaces.functions";
 import { listBoards, createBoard } from "@/lib/boards.functions";
@@ -67,6 +67,9 @@ function WorkspaceShell() {
   const isDashboards =
     typeof window !== "undefined" &&
     window.location.pathname.endsWith("/dashboards");
+  const isMembers =
+    typeof window !== "undefined" &&
+    window.location.pathname.endsWith("/members");
 
   return (
     <div className="h-screen w-screen flex bg-background text-foreground overflow-hidden">
@@ -93,6 +96,17 @@ function WorkspaceShell() {
           >
             <LayoutDashboard className="h-3.5 w-3.5 text-muted-foreground" />
             <span>Dashboards</span>
+          </Link>
+          <Link
+            to="/w/$workspaceId/members"
+            params={{ workspaceId }}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors mb-2",
+              isMembers && "bg-muted text-foreground",
+            )}
+          >
+            <Users className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Members</span>
           </Link>
           <div className="flex items-center justify-between px-2 mb-1">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">

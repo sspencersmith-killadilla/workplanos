@@ -14,6 +14,7 @@ import {
   CircleDot,
   Users,
   Link2,
+  Expand,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -43,6 +44,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { KanbanView, CalendarView, WorkloadView } from "@/components/board/views";
+import { ItemDrawer } from "@/components/board/item-drawer";
 
 export const Route = createFileRoute("/_authenticated/w/$workspaceId/b/$boardId")({
   component: BoardCanvas,
@@ -148,6 +150,7 @@ function BoardCanvas() {
 
   const tableView = views.find((v) => v.kind === "table") ?? views[0];
   const [activeViewId, setActiveViewId] = useState<string | null>(tableView?.id ?? null);
+  const [drawerItemId, setDrawerItemId] = useState<string | null>(null);
   const activeView =
     views.find((v) => v.id === activeViewId) ?? tableView ?? { id: "", kind: "table", name: "Table" };
 

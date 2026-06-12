@@ -19,10 +19,13 @@ import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
+import { Route as EmbedBBoardIdRouteImport } from './routes/embed.b.$boardId'
 import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authenticated/w.$workspaceId'
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
 import { Route as AuthenticatedWWorkspaceIdMembersRouteImport } from './routes/_authenticated/w.$workspaceId.members'
+import { Route as AuthenticatedWWorkspaceIdIntegrationsRouteImport } from './routes/_authenticated/w.$workspaceId.integrations'
 import { Route as AuthenticatedWWorkspaceIdDashboardsRouteImport } from './routes/_authenticated/w.$workspaceId.dashboards'
+import { Route as ApiPublicIntegrationsTessInboundRouteImport } from './routes/api/public/integrations/tess/inbound'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.index'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.forms'
@@ -77,6 +80,11 @@ const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const EmbedBBoardIdRoute = EmbedBBoardIdRouteImport.update({
+  id: '/embed/b/$boardId',
+  path: '/embed/b/$boardId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedWWorkspaceIdRoute =
   AuthenticatedWWorkspaceIdRouteImport.update({
     id: '/w/$workspaceId',
@@ -95,11 +103,23 @@ const AuthenticatedWWorkspaceIdMembersRoute =
     path: '/members',
     getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
   } as any)
+const AuthenticatedWWorkspaceIdIntegrationsRoute =
+  AuthenticatedWWorkspaceIdIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
+  } as any)
 const AuthenticatedWWorkspaceIdDashboardsRoute =
   AuthenticatedWWorkspaceIdDashboardsRouteImport.update({
     id: '/dashboards',
     path: '/dashboards',
     getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
+  } as any)
+const ApiPublicIntegrationsTessInboundRoute =
+  ApiPublicIntegrationsTessInboundRouteImport.update({
+    id: '/api/public/integrations/tess/inbound',
+    path: '/api/public/integrations/tess/inbound',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedWWorkspaceIdBBoardIdRoute =
   AuthenticatedWWorkspaceIdBBoardIdRouteImport.update({
@@ -137,10 +157,13 @@ export interface FileRoutesByFullPath {
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
+  '/embed/b/$boardId': typeof EmbedBBoardIdRoute
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/w/$workspaceId/integrations': typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
+  '/api/public/integrations/tess/inbound': typeof ApiPublicIntegrationsTessInboundRoute
   '/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
   '/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
   '/w/$workspaceId/b/$boardId/': typeof AuthenticatedWWorkspaceIdBBoardIdIndexRoute
@@ -155,9 +178,12 @@ export interface FileRoutesByTo {
   '/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/embed/b/$boardId': typeof EmbedBBoardIdRoute
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/w/$workspaceId/integrations': typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdIndexRoute
+  '/api/public/integrations/tess/inbound': typeof ApiPublicIntegrationsTessInboundRoute
   '/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
   '/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdIndexRoute
@@ -175,10 +201,13 @@ export interface FileRoutesById {
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_authenticated/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
+  '/embed/b/$boardId': typeof EmbedBBoardIdRoute
   '/_authenticated/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/_authenticated/w/$workspaceId/integrations': typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   '/_authenticated/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/_authenticated/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/_authenticated/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
+  '/api/public/integrations/tess/inbound': typeof ApiPublicIntegrationsTessInboundRoute
   '/_authenticated/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
   '/_authenticated/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
   '/_authenticated/w/$workspaceId/b/$boardId/': typeof AuthenticatedWWorkspaceIdBBoardIdIndexRoute
@@ -196,10 +225,13 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/invite/$token'
     | '/w/$workspaceId'
+    | '/embed/b/$boardId'
     | '/w/$workspaceId/dashboards'
+    | '/w/$workspaceId/integrations'
     | '/w/$workspaceId/members'
     | '/w/$workspaceId/'
     | '/w/$workspaceId/b/$boardId'
+    | '/api/public/integrations/tess/inbound'
     | '/w/$workspaceId/b/$boardId/automations'
     | '/w/$workspaceId/b/$boardId/forms'
     | '/w/$workspaceId/b/$boardId/'
@@ -214,9 +246,12 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/f/$slug'
     | '/invite/$token'
+    | '/embed/b/$boardId'
     | '/w/$workspaceId/dashboards'
+    | '/w/$workspaceId/integrations'
     | '/w/$workspaceId/members'
     | '/w/$workspaceId'
+    | '/api/public/integrations/tess/inbound'
     | '/w/$workspaceId/b/$boardId/automations'
     | '/w/$workspaceId/b/$boardId/forms'
     | '/w/$workspaceId/b/$boardId'
@@ -233,10 +268,13 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/invite/$token'
     | '/_authenticated/w/$workspaceId'
+    | '/embed/b/$boardId'
     | '/_authenticated/w/$workspaceId/dashboards'
+    | '/_authenticated/w/$workspaceId/integrations'
     | '/_authenticated/w/$workspaceId/members'
     | '/_authenticated/w/$workspaceId/'
     | '/_authenticated/w/$workspaceId/b/$boardId'
+    | '/api/public/integrations/tess/inbound'
     | '/_authenticated/w/$workspaceId/b/$boardId/automations'
     | '/_authenticated/w/$workspaceId/b/$boardId/forms'
     | '/_authenticated/w/$workspaceId/b/$boardId/'
@@ -249,6 +287,8 @@ export interface RootRouteChildren {
   HelpRoute: typeof HelpRoute
   FSlugRoute: typeof FSlugRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  EmbedBBoardIdRoute: typeof EmbedBBoardIdRoute
+  ApiPublicIntegrationsTessInboundRoute: typeof ApiPublicIntegrationsTessInboundRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -323,6 +363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/embed/b/$boardId': {
+      id: '/embed/b/$boardId'
+      path: '/embed/b/$boardId'
+      fullPath: '/embed/b/$boardId'
+      preLoaderRoute: typeof EmbedBBoardIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/w/$workspaceId': {
       id: '/_authenticated/w/$workspaceId'
       path: '/w/$workspaceId'
@@ -344,12 +391,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdMembersRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdRoute
     }
+    '/_authenticated/w/$workspaceId/integrations': {
+      id: '/_authenticated/w/$workspaceId/integrations'
+      path: '/integrations'
+      fullPath: '/w/$workspaceId/integrations'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedWWorkspaceIdRoute
+    }
     '/_authenticated/w/$workspaceId/dashboards': {
       id: '/_authenticated/w/$workspaceId/dashboards'
       path: '/dashboards'
       fullPath: '/w/$workspaceId/dashboards'
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdDashboardsRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdRoute
+    }
+    '/api/public/integrations/tess/inbound': {
+      id: '/api/public/integrations/tess/inbound'
+      path: '/api/public/integrations/tess/inbound'
+      fullPath: '/api/public/integrations/tess/inbound'
+      preLoaderRoute: typeof ApiPublicIntegrationsTessInboundRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/w/$workspaceId/b/$boardId': {
       id: '/_authenticated/w/$workspaceId/b/$boardId'
@@ -405,6 +466,7 @@ const AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren =
 
 interface AuthenticatedWWorkspaceIdRouteChildren {
   AuthenticatedWWorkspaceIdDashboardsRoute: typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  AuthenticatedWWorkspaceIdIntegrationsRoute: typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   AuthenticatedWWorkspaceIdMembersRoute: typeof AuthenticatedWWorkspaceIdMembersRoute
   AuthenticatedWWorkspaceIdIndexRoute: typeof AuthenticatedWWorkspaceIdIndexRoute
   AuthenticatedWWorkspaceIdBBoardIdRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
@@ -414,6 +476,8 @@ const AuthenticatedWWorkspaceIdRouteChildren: AuthenticatedWWorkspaceIdRouteChil
   {
     AuthenticatedWWorkspaceIdDashboardsRoute:
       AuthenticatedWWorkspaceIdDashboardsRoute,
+    AuthenticatedWWorkspaceIdIntegrationsRoute:
+      AuthenticatedWWorkspaceIdIntegrationsRoute,
     AuthenticatedWWorkspaceIdMembersRoute:
       AuthenticatedWWorkspaceIdMembersRoute,
     AuthenticatedWWorkspaceIdIndexRoute: AuthenticatedWWorkspaceIdIndexRoute,
@@ -452,6 +516,8 @@ const rootRouteChildren: RootRouteChildren = {
   HelpRoute: HelpRoute,
   FSlugRoute: FSlugRoute,
   InviteTokenRoute: InviteTokenRoute,
+  EmbedBBoardIdRoute: EmbedBBoardIdRoute,
+  ApiPublicIntegrationsTessInboundRoute: ApiPublicIntegrationsTessInboundRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

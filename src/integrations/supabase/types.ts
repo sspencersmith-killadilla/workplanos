@@ -204,6 +204,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          embed_token: string | null
           icon: string | null
           id: string
           name: string
@@ -217,6 +218,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          embed_token?: string | null
           icon?: string | null
           id?: string
           name: string
@@ -230,6 +232,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          embed_token?: string | null
           icon?: string | null
           id?: string
           name?: string
@@ -473,6 +476,63 @@ export type Database = {
           },
         ]
       }
+      integration_dispatches: {
+        Row: {
+          attempts: number
+          created_at: string
+          direction: string
+          error: string | null
+          id: string
+          item_id: string | null
+          next_retry_at: string | null
+          payload: Json
+          status_code: number | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          direction: string
+          error?: string | null
+          id?: string
+          item_id?: string | null
+          next_retry_at?: string | null
+          payload: Json
+          status_code?: number | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          direction?: string
+          error?: string | null
+          id?: string
+          item_id?: string | null
+          next_retry_at?: string | null
+          payload?: Json
+          status_code?: number | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_dispatches_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_dispatches_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_activity: {
         Row: {
           actor_id: string | null
@@ -503,6 +563,41 @@ export type Database = {
             foreignKeyName: "item_activity_item_id_fkey"
             columns: ["item_id"]
             isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_external_refs: {
+        Row: {
+          external_id: string
+          external_kind: string | null
+          external_url: string | null
+          item_id: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          external_id: string
+          external_kind?: string | null
+          external_url?: string | null
+          item_id: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          external_id?: string
+          external_kind?: string | null
+          external_url?: string | null
+          item_id?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_external_refs_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: true
             referencedRelation: "items"
             referencedColumns: ["id"]
           },
@@ -756,6 +851,63 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      workspace_integrations: {
+        Row: {
+          created_at: string
+          created_by: string
+          enabled: boolean
+          id: string
+          kind: string
+          shared_secret: string
+          target_board_id: string | null
+          tess_base_url: string | null
+          tess_workspace_id: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          enabled?: boolean
+          id?: string
+          kind: string
+          shared_secret: string
+          target_board_id?: string | null
+          tess_base_url?: string | null
+          tess_workspace_id?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          shared_secret?: string
+          target_board_id?: string | null
+          tess_base_url?: string | null
+          tess_workspace_id?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_integrations_target_board_id_fkey"
+            columns: ["target_board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_integrations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workspace_invites: {
         Row: {

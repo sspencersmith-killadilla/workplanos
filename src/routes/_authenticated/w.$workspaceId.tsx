@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate, useParams } from "@tanstack
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users, User, Menu, Shield } from "lucide-react";
+import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users, User, Menu, Shield, Plug } from "lucide-react";
 import { InboxBell } from "@/components/InboxBell";
 import { SearchPalette } from "@/components/SearchPalette";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,6 +78,9 @@ function WorkspaceShell() {
   const isMembers =
     typeof window !== "undefined" &&
     window.location.pathname.endsWith("/members");
+  const isIntegrations =
+    typeof window !== "undefined" &&
+    window.location.pathname.endsWith("/integrations");
   const [navOpen, setNavOpen] = useState(false);
 
   return (
@@ -135,6 +138,17 @@ function WorkspaceShell() {
           >
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
             <span>Members</span>
+          </Link>
+          <Link
+            to="/w/$workspaceId/integrations"
+            params={{ workspaceId }}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors mb-2",
+              isIntegrations && "bg-muted text-foreground",
+            )}
+          >
+            <Plug className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Integrations</span>
           </Link>
           <div className="flex items-center justify-between px-2 mb-1">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">

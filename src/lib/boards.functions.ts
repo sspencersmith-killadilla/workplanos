@@ -477,63 +477,53 @@ export const upsertValue = createServerFn({ method: "POST" })
 
     // Outbound dispatch — fire-and-forget to TESS if this item is linked
     try {
-      const { data: ref } = await context.supabase
-        .from("item_external_refs")
-        .select("source, external_id")
-        .eq("item_id", itemId)
-        .maybeSingle();
-      if (ref && ref.source === "tess") {
-        const { data: item } = await context.supabase
-          .from("items")
-          .select("board_id, title, board:boards(workspace_id)")
-          .eq("id", itemId)
-          .single();
-        const wsId = (item as any)?.board?.workspace_id;
+      const { dispatchToTess, externalRefForItem, workspaceIdForItem } = await import(
+        "./tess-dispatch.server"
+      );
+      const ref = await externalRefForItem(itemId);
+      if (ref?.source === "tess") {
+        const wsId = await workspaceIdForItem(itemId);
         if (wsId) {
+          // Resolve human-friendly fields for typed events
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { data: integ } = await supabaseAdmin
-            .from("workspace_integrations")
-            .select("tess_base_url, shared_secret, enabled")
-            .eq("workspace_id", wsId)
-            .eq("kind", "tess")
+          const { data: col } = await supabaseAdmin
+            .from("board_columns")
+            .select("kind, title, settings")
+            .eq("id", columnId)
             .maybeSingle();
-          if (integ?.enabled && integ.tess_base_url) {
-            const body = JSON.stringify({
-              type: "item.updated",
-              external_id: ref.external_id,
-              title: (item as any)?.title,
-              changes: { columnId, ...rest },
-            });
-            const { createHmac } = await import("crypto");
-            const sig = createHmac("sha256", integ.shared_secret).update(body).digest("hex");
-            const url = `${integ.tess_base_url.replace(/\/$/, "")}/api/public/integrations/wpo/inbound`;
-            let statusCode: number | null = null;
-            let err: string | null = null;
-            try {
-              const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                  "content-type": "application/json",
-                  "x-wpo-workspace": wsId,
-                  "x-wpo-signature": `sha256=${sig}`,
-                },
-                body,
-              });
-              statusCode = res.status;
-              if (!res.ok) err = await res.text().catch(() => null);
-            } catch (e: any) {
-              err = e?.message ?? "fetch failed";
+
+          let type: "item.updated" | "item.status_changed" | "item.assignee_changed" =
+            "item.updated";
+          const changes: Record<string, unknown> = { columnId, columnTitle: col?.title };
+
+          if (col?.kind === "status" && rest.status_option_id !== undefined) {
+            type = "item.status_changed";
+            const options: any[] = (col.settings as any)?.options ?? [];
+            const match = options.find((o) => o.id === rest.status_option_id);
+            changes.status_option_id = rest.status_option_id;
+            changes.status_label = match?.label ?? null;
+          } else if (col?.kind === "people" && rest.people_user_ids !== undefined) {
+            type = "item.assignee_changed";
+            const ids = rest.people_user_ids ?? [];
+            if (ids.length > 0) {
+              const { data: profs } = await supabaseAdmin
+                .from("profiles")
+                .select("id, email")
+                .in("id", ids);
+              changes.assignee_emails = (profs ?? []).map((p: any) => p.email).filter(Boolean);
+            } else {
+              changes.assignee_emails = [];
             }
-            await supabaseAdmin.from("integration_dispatches").insert({
-              workspace_id: wsId,
-              item_id: itemId,
-              direction: "outbound",
-              payload: JSON.parse(body),
-              status_code: statusCode,
-              error: err,
-              attempts: 1,
-            });
+          } else {
+            Object.assign(changes, rest);
           }
+
+          await dispatchToTess({
+            workspaceId: wsId,
+            itemId,
+            type,
+            body: { external_id: ref.external_id, changes },
+          });
         }
       }
     } catch {

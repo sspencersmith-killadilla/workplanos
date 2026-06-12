@@ -1,66 +1,51 @@
+## 1. Rename WorkOS → WorkPlanOS
 
-# Path to Production — Free & Open Source
+Replace every "WorkOS" string (brand name, page titles, meta descriptions, OG tags, testimonial copy) across the app. Files touched:
+- `src/routes/index.tsx` (header, meta, footer)
+- `src/routes/auth.tsx` (left panel branding, meta)
+- `src/routes/_authenticated/app.tsx` (header)
+- `src/routes/_authenticated/w.$workspaceId.tsx` (any header refs)
+- `public/USER_GUIDE.md`, `public/DEPLOY.md`, `README.md`
+- Any remaining mentions found by a final grep
 
-No billing, ever. Scope below covers every gap identified in the readiness audit, ordered by user impact and dependency.
+The single-letter "W" logo block stays (still works for WorkPlanOS).
 
----
+## 2. Make the Account page easy to reach
 
-## Phase 10 — Workspace Members & Invites
-Unblocks team collaboration (today only the owner can use a workspace).
+Today `/account` exists but is only linked from the workspace shell. I'll:
+- Add an **Account** link (and Sign out) to the header on `/app` (the workspaces list page), so it's reachable before entering a workspace.
+- Also expose it on the landing header when signed in (optional — say if you'd rather keep landing logged-out only).
 
-- New server fns (`src/lib/members.functions.ts`): `listMembers`, `inviteMember` (by email), `acceptInvite`, `updateMemberRole`, `removeMember`, `leaveWorkspace`.
-- New table `workspace_invites` (email, workspace_id, role, token, expires_at, invited_by). RLS + GRANTs per house rules.
-- Accept flow: public route `/invite/$token` → if signed-in, accept; else send to `/auth` then back.
-- UI: `w.$workspaceId.members.tsx` — list, role dropdown (owner/admin/member/viewer), invite form, pending invites, remove/leave actions.
-- Sidebar link "Members" + owner-only "Settings".
+## 3. Fix "can't create new workspaces"
 
-## Phase 11 — Profile & Account Settings
-- Route `/_authenticated/account.tsx`: update name, avatar (upload to existing storage), change password, sign out everywhere.
-- Server fns in `src/lib/profile.functions.ts`.
-- Avatar shown in sidebar + item assignees.
+Database policies look correct (`owner_id = auth.uid()` insert, owner auto-added as member via trigger). Likely causes:
+- You were signed out (you're currently on `/auth`) — sign in first.
+- Your profile or membership has the lockdown `is_locked` flag set from earlier admin testing.
 
-## Phase 12 — Notifications
-- Inbox popover in top bar with unread badge, realtime subscribe to `notifications` table for current user.
-- Triggers (DB): on `comments` insert with @mention, on `items` assignee change, on automation runs that target a user.
-- Mark-as-read / mark-all-read server fns.
-- Route `/_authenticated/inbox.tsx` for full history.
+I'll:
+- Verify your `ssm***@mckinneytexas.org` profile and `user_roles` row, and clear any `is_locked` flag if present.
+- Add a visible error toast on the create-workspace dialog showing the real DB error (currently it just says "Could not create workspace"), so future failures are diagnosable.
 
-## Phase 13 — People Column + Global Search
-- People picker: replace "soon" placeholder. Stores `user_id[]` in item_values; assignee chips with avatar; filter by assignee in views.
-- Global search: cmd+k palette. Server fn `search(workspaceId, q)` queries boards, items (name + text values), comments. Ranked, grouped results, deep links.
+If after sign-in it still fails, please paste the toast/error text.
 
-## Phase 14 — Board UX polish
-- Drag-to-reorder groups and items in Table view (dnd-kit, persist `position`).
-- View settings UI: filters, group-by, sort, hidden columns — persisted to `board_views.settings` JSONB. Apply across Table/Kanban/Calendar/Workload.
-- Mobile responsive board canvas: stacked card list under `md`, sticky header, touch-friendly drawer.
-- Error boundaries on each route, retry buttons that call `router.invalidate()`.
+## 4. Online user manual (in-app)
 
-## Phase 15 — Data lifecycle & resilience
-- Archive/soft-delete: `archived_at` on boards/items; "Archived" filter; restore action; hard delete after 30 days via pg_cron.
-- Export: per-board CSV + workspace JSON export server fn (admin/owner only).
-- Comments edit + delete (author or admin).
-- Activity log: ensure every mutation writes to `item_activity` (assignee change, status change, value edits, file add/remove).
-- Performance: paginate items per group (50/page), virtualize long lists, fetch values per visible page rather than whole board.
-- Rate limiting on auth + invite + search fns (in-memory token bucket per user-id is fine for self-host).
+Today the manual is a raw `.md` file served from `/USER_GUIDE.md`. I'll build a proper in-app help center:
+- New route `/help` (public) with a left-side table of contents and styled article body.
+- New route `/help/$topic` for each section (Getting started, Workspaces, Boards & items, Views, Forms, Automations, Dashboards, Members & roles, Account).
+- Written for non-technical users with screenshots-free, plain-language steps.
+- Linked from: landing footer ("User manual"), app header ("Help"), and account page.
+- The existing `/USER_GUIDE.md` (technical/self-host) stays for admins; footer keeps both links.
 
-## Phase 16 — Self-host & docs polish
-- Update `USER_GUIDE.md`: member roles, invites, notifications, search, keyboard shortcuts, view settings, export/restore.
-- Add `DEPLOY.md`: env vars, Supabase project setup script, migrations, OAuth provider setup, Cloudflare/Vercel build commands.
-- `docker-compose.yml` for fully local Supabase + app.
-- Seed script for demo workspace.
-- Keyboard shortcuts: `?` cheat-sheet, `c` new item, `/` focus search, `g b` go to boards.
+## 5. Replace testimonial quotes with tips & tricks
 
----
+- `src/routes/auth.tsx` left panel: replace the blockquote with a rotating "Tip of the day" card (e.g. "Press ⌘K to jump to any board", "Drag a column header to reorder", "Use Forms to let non-members submit work").
+- Landing page has no quote currently — I'll add a "Tips & tricks" strip above the footer with 3–4 short tips instead of adding a testimonials section.
 
-## Out of scope (explicit)
-- Billing, plans, Stripe/Paddle. Free forever.
-- SSO/SAML, advanced enterprise audit (basic activity log only).
-- Formula column, Timeline view, board templates marketplace — nice-to-haves, deferred.
+## Clarifying question
 
-## Technical notes
-- All new tables follow the GRANT → RLS → POLICY order; user-scoped policies via `is_member` / `has_ws_role`.
-- All new server fns use `requireSupabaseAuth` + workspace-role checks. Privileged ops (invite accept by token) load `supabaseAdmin` inside the handler.
-- Notifications + search use realtime channels already wired in `__root.tsx`.
-- No new external services required; everything runs on Lovable Cloud or any self-hosted Supabase.
+For the user manual, do you want me to:
+- **A)** Author the content myself based on what the app actually does (recommended, ~8 short articles), or
+- **B)** Just port your existing `USER_GUIDE.md` content into the styled in-app pages verbatim?
 
-Each phase is independently shippable; recommend executing in order. After phase 12 the product is genuinely usable by a team; phases 13–16 bring it to production polish.
+I'll proceed with **A** unless you say otherwise.

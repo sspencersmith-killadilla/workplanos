@@ -5,9 +5,9 @@ import { ArrowRight, Layers, Sparkles, Workflow, Zap, GitBranch, BarChart3 } fro
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "WorkOS — Workflows your team can feel" },
+      { title: "WorkPlanOS — Workflows your team can feel" },
       { name: "description", content: "A premium, blazing-fast workflow & project platform. Boards, custom columns, kanban, calendar, workload, automations, forms, dashboards. No AI fluff." },
-      { property: "og:title", content: "WorkOS — Workflows your team can feel" },
+      { property: "og:title", content: "WorkPlanOS — Workflows your team can feel" },
       { property: "og:description", content: "Boards, kanban, calendar, workload, automations, intake forms, dashboards. The productivity engine teams ship with." },
     ],
   }),
@@ -21,7 +21,7 @@ function Index() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground font-bold">W</div>
-            <span className="font-semibold tracking-tight">WorkOS</span>
+            <span className="font-semibold tracking-tight">WorkPlanOS</span>
           </div>
           <nav className="hidden gap-7 text-sm text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
@@ -84,21 +84,44 @@ function Index() {
         </div>
       </section>
 
+      <section id="tips" className="py-20 border-t border-border/60">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">Tips &amp; tricks</h2>
+              <p className="mt-2 text-muted-foreground">Small habits that make WorkPlanOS feel effortless.</p>
+            </div>
+            <Link to="/help" className="hidden sm:inline-flex items-center gap-1.5 text-sm text-primary hover:opacity-80">
+              Open user manual <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              { title: "Search anything", body: "Press / from anywhere to jump to a board, item, or member in one keystroke." },
+              { title: "Status drives Kanban", body: "Add a Status column to any board and the Kanban view appears automatically." },
+              { title: "Forms = inbox", body: "Publish a form to capture intake from people who don't have an account." },
+              { title: "Automate the boring", body: "When status changes → notify or move the item. No code required." },
+            ].map((t) => (
+              <div key={t.title} className="rounded-xl border border-border bg-card p-5">
+                <div className="text-xs font-semibold uppercase tracking-widest text-primary">Tip</div>
+                <h3 className="mt-2 font-semibold tracking-tight">{t.title}</h3>
+                <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{t.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <footer className="border-t border-border/60 py-10">
         <div className="mx-auto max-w-6xl px-6 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="grid h-5 w-5 place-items-center rounded bg-primary text-primary-foreground font-bold text-[10px]">W</div>
-            <span>© WorkOS</span>
+            <span>© WorkPlanOS</span>
           </div>
           <div className="flex items-center gap-5">
-            <a
-              href="/USER_GUIDE.md"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors"
-            >
+            <Link to="/help" className="hover:text-foreground transition-colors">
               User manual
-            </a>
+            </Link>
             <a
               href="/DEPLOY.md"
               target="_blank"

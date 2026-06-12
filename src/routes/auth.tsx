@@ -12,12 +12,46 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in · WorkOS" },
-      { name: "description", content: "Sign in or create your WorkOS account." },
+      { title: "Sign in · WorkPlanOS" },
+      { name: "description", content: "Sign in or create your WorkPlanOS account." },
     ],
   }),
   component: AuthPage,
 });
+
+const TIPS = [
+  { title: "Search anything", body: "Press / from anywhere to jump to a board, item, or member." },
+  { title: "Kanban auto-appears", body: "Add a Status column to a board and the Kanban view shows up automatically." },
+  { title: "Forms for intake", body: "Publish a public form to collect work from people without an account." },
+  { title: "Automate the boring", body: "When status changes → notify, reassign, or move the item." },
+  { title: "Drawer = details", body: "Click any item title to open comments, files, and activity." },
+];
+
+function TipOfTheDay() {
+  const [i, setI] = useState(() => Math.floor(Math.random() * TIPS.length));
+  useEffect(() => {
+    const t = setInterval(() => setI((p) => (p + 1) % TIPS.length), 6000);
+    return () => clearInterval(t);
+  }, []);
+  const tip = TIPS[i];
+  return (
+    <div className="max-w-md">
+      <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Tip &amp; tricks</div>
+      <h2 className="text-2xl font-semibold tracking-tight leading-snug">{tip.title}</h2>
+      <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{tip.body}</p>
+      <div className="mt-6 flex gap-1.5">
+        {TIPS.map((_, n) => (
+          <button
+            key={n}
+            onClick={() => setI(n)}
+            aria-label={`Show tip ${n + 1}`}
+            className={`h-1.5 rounded-full transition-all ${n === i ? "w-6 bg-primary" : "w-1.5 bg-border"}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -80,13 +114,10 @@ function AuthPage() {
       <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-primary/10 via-background to-background border-r border-border/60">
         <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground font-bold">W</div>
-          WorkOS
+          WorkPlanOS
         </Link>
         <div>
-          <blockquote className="text-2xl font-medium tracking-tight leading-snug max-w-md">
-            “We replaced four tools with WorkOS in a week. The team actually <span className="text-primary">enjoys</span> using it.”
-          </blockquote>
-          <p className="mt-4 text-sm text-muted-foreground">— Engineering lead at a 40-person SaaS</p>
+          <TipOfTheDay />
         </div>
       </div>
       <div className="flex items-center justify-center p-6">

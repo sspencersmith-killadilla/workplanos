@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate, useParams } from "@tanstack
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users, User } from "lucide-react";
+import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users, User, Menu } from "lucide-react";
 import { InboxBell } from "@/components/InboxBell";
 import { SearchPalette } from "@/components/SearchPalette";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,10 +72,30 @@ function WorkspaceShell() {
   const isMembers =
     typeof window !== "undefined" &&
     window.location.pathname.endsWith("/members");
+  const [navOpen, setNavOpen] = useState(false);
 
   return (
     <div className="h-screen w-screen flex bg-background text-foreground overflow-hidden">
-      <aside className="w-64 shrink-0 border-r border-border/60 flex flex-col">
+      <button
+        className="md:hidden fixed top-2 left-2 z-50 h-9 w-9 grid place-items-center rounded-md bg-background border border-border/60 shadow-sm"
+        onClick={() => setNavOpen((o) => !o)}
+        aria-label="Toggle navigation"
+      >
+        <Menu className="h-4 w-4" />
+      </button>
+      {navOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/40 z-30"
+          onClick={() => setNavOpen(false)}
+        />
+      )}
+      <aside
+        className={cn(
+          "w-64 shrink-0 border-r border-border/60 flex flex-col bg-background",
+          "fixed md:static inset-y-0 left-0 z-40 transition-transform",
+          navOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+        )}
+      >
         <div className="px-3 py-3 border-b border-border/60 flex items-center gap-2">
           <Link to="/app" className="grid h-7 w-7 place-items-center rounded-md hover:bg-muted">
             <ChevronLeft className="h-4 w-4" />

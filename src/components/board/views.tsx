@@ -113,18 +113,19 @@ export function KanbanView({
 
   const col = statusCols.find((c) => c.id === statusColId)!;
   const opts: StatusOpt[] = col.settings?.options ?? [];
-  const lanes: { id: string | null; label: string; color: string }[] = [
+  const NONE = "__none";
+  const lanes: { id: string; label: string; color: string }[] = [
     ...opts.map((o) => ({ id: o.id, label: o.label, color: o.color })),
-    { id: null, label: "No status", color: "var(--muted)" },
+    { id: NONE, label: "No status", color: "var(--muted)" },
   ];
 
-  const byLane = new Map<string | null, Item[]>();
+  const byLane = new Map<string, Item[]>();
   for (const lane of lanes) byLane.set(lane.id, []);
   for (const it of items) {
     const v = getVal(values, it.id, statusColId);
-    const sid = v?.status_option_id ?? null;
-    if (!byLane.has(sid)) byLane.set(null, byLane.get(null) ?? []);
-    (byLane.get(sid) ?? byLane.get(null)!).push(it);
+    const sid = v?.status_option_id ?? NONE;
+    if (!byLane.has(sid)) byLane.set(NONE, byLane.get(NONE) ?? []);
+    (byLane.get(sid) ?? byLane.get(NONE)!).push(it);
   }
 
   const dragItem = items.find((i) => i.id === dragId) ?? null;
@@ -175,8 +176,8 @@ export function KanbanView({
           <div className="flex gap-3 h-full min-h-0">
             {lanes.map((lane) => (
               <KanbanLane
-                key={lane.id ?? "__none"}
-                laneId={lane.id ?? "__none"}
+                key={lane.id}
+                laneId={lane.id}
                 label={lane.label}
                 color={lane.color}
                 items={byLane.get(lane.id) ?? []}

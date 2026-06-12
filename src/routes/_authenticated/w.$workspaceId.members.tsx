@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Mail, Trash2, UserMinus, LogOut, Copy } from "lucide-react";
+import { Mail, Trash2, UserMinus, LogOut, Copy, Lock, Unlock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import {
   updateMemberRole,
   removeMember,
   leaveWorkspace,
+  setMemberLock,
 } from "@/lib/members.functions";
 
 export const Route = createFileRoute("/_authenticated/w/$workspaceId/members")({
@@ -43,6 +44,7 @@ function MembersPage() {
   const updateRoleFn = useServerFn(updateMemberRole);
   const removeFn = useServerFn(removeMember);
   const leaveFn = useServerFn(leaveWorkspace);
+  const lockFn = useServerFn(setMemberLock);
 
   const wsQ = useQuery({
     queryKey: ["workspace", workspaceId],
@@ -87,6 +89,13 @@ function MembersPage() {
 
   const remove = useMutation({
     mutationFn: (userId: string) => removeFn({ data: { workspaceId, userId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["members", workspaceId] }),
+    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+  });
+
+  const lock = useMutation({
+    mutationFn: (v: { userId: string; lock: boolean }) =>
+      lockFn({ data: { workspaceId, userId: v.userId, lock: v.lock } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["members", workspaceId] }),
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
@@ -234,13 +243,29 @@ function MembersPage() {
                     <span className="text-xs text-muted-foreground capitalize">{m.role}</span>
                   )}
                   {isAdmin && m.role !== "owner" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => remove.mutate(m.user_id)}
-                    >
-                      <UserMinus className="h-3.5 w-3.5" />
-                    </Button>
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title={m.is_locked ? "Unlock in this workspace" : "Lock in this workspace"}
+                        onClick={() =>
+                          lock.mutate({ userId: m.user_id, lock: !m.is_locked })
+                        }
+                      >
+                        {m.is_locked ? (
+                          <Unlock className="h-3.5 w-3.5 text-destructive" />
+                        ) : (
+                          <Lock className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => remove.mutate(m.user_id)}
+                      >
+                        <UserMinus className="h-3.5 w-3.5" />
+                      </Button>
+                    </>
                   )}
                 </div>
               </li>

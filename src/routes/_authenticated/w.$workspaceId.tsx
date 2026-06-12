@@ -2,12 +2,13 @@ import { createFileRoute, Link, Outlet, useNavigate, useParams } from "@tanstack
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users, User, Menu } from "lucide-react";
+import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users, User, Menu, Shield } from "lucide-react";
 import { InboxBell } from "@/components/InboxBell";
 import { SearchPalette } from "@/components/SearchPalette";
 import { supabase } from "@/integrations/supabase/client";
 import { getWorkspace } from "@/lib/workspaces.functions";
 import { listBoards, createBoard } from "@/lib/boards.functions";
+import { isSuperAdmin } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,6 +34,7 @@ function WorkspaceShell() {
   const getWsFn = useServerFn(getWorkspace);
   const listBoardsFn = useServerFn(listBoards);
   const createBoardFn = useServerFn(createBoard);
+  const isSuperAdminFn = useServerFn(isSuperAdmin);
 
   const { data: ws } = useQuery({
     queryKey: ["workspace", workspaceId],
@@ -41,6 +43,10 @@ function WorkspaceShell() {
   const { data: boards } = useQuery({
     queryKey: ["boards", workspaceId],
     queryFn: () => listBoardsFn({ data: { workspaceId } }),
+  });
+  const { data: superAdmin } = useQuery({
+    queryKey: ["isSuperAdmin"],
+    queryFn: () => isSuperAdminFn(),
   });
 
   const [open, setOpen] = useState(false);
@@ -218,6 +224,15 @@ function WorkspaceShell() {
             >
               <User className="h-3.5 w-3.5" />
             </Link>
+            {superAdmin && (
+              <Link
+                to="/admin"
+                className="h-7 w-7 grid place-items-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
+                title="Site administration"
+              >
+                <Shield className="h-3.5 w-3.5" />
+              </Link>
+            )}
           </div>
           <button className="h-7 w-7 grid place-items-center rounded-md hover:bg-muted text-muted-foreground">
             <Settings className="h-3.5 w-3.5" />

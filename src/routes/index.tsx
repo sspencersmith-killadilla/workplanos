@@ -90,7 +90,25 @@ function Index() {
             <div className="grid h-5 w-5 place-items-center rounded bg-primary text-primary-foreground font-bold text-[10px]">W</div>
             <span>© WorkOS</span>
           </div>
-          <Link to="/auth" className="hover:text-foreground transition-colors">Sign in</Link>
+          <div className="flex items-center gap-5">
+            <a
+              href="/USER_GUIDE.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              User manual
+            </a>
+            <a
+              href="/DEPLOY.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              Self-host guide
+            </a>
+            <Link to="/auth" className="hover:text-foreground transition-colors">Sign in</Link>
+          </div>
         </div>
       </footer>
     </div>

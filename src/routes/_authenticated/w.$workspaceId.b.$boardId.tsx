@@ -432,6 +432,7 @@ function GroupSection(props: {
                       <Cell
                         column={c}
                         value={values.get(it.id)?.get(c.id) ?? null}
+                        workspaceId={props.workspaceId}
                         onSave={(patch) =>
                           props.onUpsertValue({ itemId: it.id, columnId: c.id, ...patch })
                         }

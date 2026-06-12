@@ -112,14 +112,16 @@ function AppHome() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {workspaces.map((ws: any) => (
-              <div
+              <Link
                 key={ws.id}
-                className="group rounded-xl border border-border bg-card p-5 hover:border-primary/40 hover:shadow-sm transition-all cursor-pointer"
+                to="/w/$workspaceId"
+                params={{ workspaceId: ws.id }}
+                className="group rounded-xl border border-border bg-card p-5 hover:border-primary/40 hover:shadow-sm transition-all"
               >
                 <div className="h-10 w-10 rounded-md mb-4" style={{ background: ws.color }} />
                 <h3 className="font-medium tracking-tight">{ws.name}</h3>
                 <p className="text-xs text-muted-foreground mt-1 font-mono">{ws.slug}</p>
-              </div>
+              </Link>
             ))}
           </div>
         )}

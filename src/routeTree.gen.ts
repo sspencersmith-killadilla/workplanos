@@ -22,6 +22,7 @@ import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authenticated/w.$workspaceId'
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
 import { Route as AuthenticatedWWorkspaceIdMembersRouteImport } from './routes/_authenticated/w.$workspaceId.members'
+import { Route as AuthenticatedWWorkspaceIdIntegrationsRouteImport } from './routes/_authenticated/w.$workspaceId.integrations'
 import { Route as AuthenticatedWWorkspaceIdDashboardsRouteImport } from './routes/_authenticated/w.$workspaceId.dashboards'
 import { Route as ApiPublicIntegrationsTessInboundRouteImport } from './routes/api/public/integrations/tess/inbound'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId'
@@ -96,6 +97,12 @@ const AuthenticatedWWorkspaceIdMembersRoute =
     path: '/members',
     getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
   } as any)
+const AuthenticatedWWorkspaceIdIntegrationsRoute =
+  AuthenticatedWWorkspaceIdIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
+  } as any)
 const AuthenticatedWWorkspaceIdDashboardsRoute =
   AuthenticatedWWorkspaceIdDashboardsRouteImport.update({
     id: '/dashboards',
@@ -145,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/invite/$token': typeof InviteTokenRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/w/$workspaceId/integrations': typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
@@ -164,6 +172,7 @@ export interface FileRoutesByTo {
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/w/$workspaceId/integrations': typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/api/public/integrations/tess/inbound': typeof ApiPublicIntegrationsTessInboundRoute
@@ -185,6 +194,7 @@ export interface FileRoutesById {
   '/invite/$token': typeof InviteTokenRoute
   '/_authenticated/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/_authenticated/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/_authenticated/w/$workspaceId/integrations': typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   '/_authenticated/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/_authenticated/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/_authenticated/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/w/$workspaceId'
     | '/w/$workspaceId/dashboards'
+    | '/w/$workspaceId/integrations'
     | '/w/$workspaceId/members'
     | '/w/$workspaceId/'
     | '/w/$workspaceId/b/$boardId'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/invite/$token'
     | '/w/$workspaceId/dashboards'
+    | '/w/$workspaceId/integrations'
     | '/w/$workspaceId/members'
     | '/w/$workspaceId'
     | '/api/public/integrations/tess/inbound'
@@ -246,6 +258,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/_authenticated/w/$workspaceId'
     | '/_authenticated/w/$workspaceId/dashboards'
+    | '/_authenticated/w/$workspaceId/integrations'
     | '/_authenticated/w/$workspaceId/members'
     | '/_authenticated/w/$workspaceId/'
     | '/_authenticated/w/$workspaceId/b/$boardId'
@@ -358,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdMembersRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdRoute
     }
+    '/_authenticated/w/$workspaceId/integrations': {
+      id: '/_authenticated/w/$workspaceId/integrations'
+      path: '/integrations'
+      fullPath: '/w/$workspaceId/integrations'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedWWorkspaceIdRoute
+    }
     '/_authenticated/w/$workspaceId/dashboards': {
       id: '/_authenticated/w/$workspaceId/dashboards'
       path: '/dashboards'
@@ -426,6 +446,7 @@ const AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren =
 
 interface AuthenticatedWWorkspaceIdRouteChildren {
   AuthenticatedWWorkspaceIdDashboardsRoute: typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  AuthenticatedWWorkspaceIdIntegrationsRoute: typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   AuthenticatedWWorkspaceIdMembersRoute: typeof AuthenticatedWWorkspaceIdMembersRoute
   AuthenticatedWWorkspaceIdIndexRoute: typeof AuthenticatedWWorkspaceIdIndexRoute
   AuthenticatedWWorkspaceIdBBoardIdRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
@@ -435,6 +456,8 @@ const AuthenticatedWWorkspaceIdRouteChildren: AuthenticatedWWorkspaceIdRouteChil
   {
     AuthenticatedWWorkspaceIdDashboardsRoute:
       AuthenticatedWWorkspaceIdDashboardsRoute,
+    AuthenticatedWWorkspaceIdIntegrationsRoute:
+      AuthenticatedWWorkspaceIdIntegrationsRoute,
     AuthenticatedWWorkspaceIdMembersRoute:
       AuthenticatedWWorkspaceIdMembersRoute,
     AuthenticatedWWorkspaceIdIndexRoute: AuthenticatedWWorkspaceIdIndexRoute,
@@ -478,3 +501,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

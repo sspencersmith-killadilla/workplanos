@@ -88,6 +88,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "A premium, blazing-fast workflow and project management platform for teams that hate friction." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "WorkOS — Workflows your team can feel" },
+      { name: "twitter:description", content: "A premium, blazing-fast workflow and project management platform for teams that hate friction." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b573ee5b-dfb1-43d2-b579-78c3085a460c/id-preview-e2b18240--895400a2-e29b-436f-80c5-77093ededc51.lovable.app-1781293606597.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b573ee5b-dfb1-43d2-b579-78c3085a460c/id-preview-e2b18240--895400a2-e29b-436f-80c5-77093ededc51.lovable.app-1781293606597.png" },
     ],
     links: [
       {

@@ -29,8 +29,6 @@ import {
   upsertValue,
   updateBoard,
 } from "@/lib/boards.functions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +41,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/w/$workspaceId/b/$boardId")({

@@ -42,6 +42,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { KanbanView, CalendarView, WorkloadView } from "@/components/board/views";
 
 export const Route = createFileRoute("/_authenticated/w/$workspaceId/b/$boardId")({
   component: BoardCanvas,
@@ -142,6 +143,13 @@ function BoardCanvas() {
 
   const columns = (data.columns ?? []) as Col[];
   const groups = (data.groups ?? []) as Group[];
+  const views = (data.views ?? []) as { id: string; kind: string; name: string }[];
+  const allItems = ((data.items ?? []) as any[]).filter((i) => !i.parent_item_id) as Item[];
+
+  const tableView = views.find((v) => v.kind === "table") ?? views[0];
+  const [activeViewId, setActiveViewId] = useState<string | null>(tableView?.id ?? null);
+  const activeView =
+    views.find((v) => v.id === activeViewId) ?? tableView ?? { id: "", kind: "table", name: "Table" };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -158,22 +166,25 @@ function BoardCanvas() {
           />
         </div>
         <div className="flex items-center gap-1 rounded-md border border-border/60 p-1">
-          <button className="px-2.5 py-1 text-xs rounded bg-muted text-foreground font-medium">
-            Main Table
-          </button>
-          <button className="px-2.5 py-1 text-xs rounded text-muted-foreground hover:text-foreground hover:bg-muted/50" disabled>
-            Kanban
-          </button>
-          <button className="px-2.5 py-1 text-xs rounded text-muted-foreground hover:text-foreground hover:bg-muted/50" disabled>
-            Calendar
-          </button>
-          <button className="px-2.5 py-1 text-xs rounded text-muted-foreground hover:text-foreground hover:bg-muted/50" disabled>
-            Workload
-          </button>
+          {views.map((v) => (
+            <button
+              key={v.id}
+              onClick={() => setActiveViewId(v.id)}
+              className={cn(
+                "px-2.5 py-1 text-xs rounded font-medium transition-colors",
+                activeView.id === v.id
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+              )}
+            >
+              {v.name}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto px-6 py-5">
+      {activeView.kind === "table" && (
+        <div className="flex-1 overflow-auto px-6 py-5">
         <div className="space-y-6 min-w-fit">
           {groups.map((g) => (
             <GroupSection
@@ -215,7 +226,31 @@ function BoardCanvas() {
             <Plus className="h-4 w-4" /> Add group
           </button>
         </div>
-      </div>
+        </div>
+      )}
+
+      {activeView.kind === "kanban" && (
+        <div className="flex-1 min-h-0">
+          <KanbanView
+            items={allItems}
+            columns={columns}
+            values={valuesByItem}
+            onUpsertValue={(p) => upsertValueFn({ data: p }).then(invalidate)}
+          />
+        </div>
+      )}
+
+      {activeView.kind === "calendar" && (
+        <div className="flex-1 min-h-0">
+          <CalendarView items={allItems} columns={columns} values={valuesByItem} />
+        </div>
+      )}
+
+      {activeView.kind === "workload" && (
+        <div className="flex-1 min-h-0">
+          <WorkloadView items={allItems} columns={columns} values={valuesByItem} />
+        </div>
+      )}
     </div>
   );
 }

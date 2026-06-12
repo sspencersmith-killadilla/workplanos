@@ -7,6 +7,7 @@ A workspace-based work-management platform with boards, items, views, forms, aut
 | Document | Description |
 |----------|-------------|
 | [User Guide & Self-Deploy Manual](./USER_GUIDE.md) | Complete guide for end-users and administrators, including self-hosted installation instructions |
+| [Self-Hosting Guide](./DEPLOY.md) | Concise walkthrough: env vars, migrations, OAuth, build & deploy |
 
 ## What's Inside the Guide
 

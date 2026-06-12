@@ -47,6 +47,7 @@ import {
 import { cn } from "@/lib/utils";
 import { KanbanView, CalendarView, WorkloadView } from "@/components/board/views";
 import { ItemDrawer } from "@/components/board/item-drawer";
+import { PeoplePicker } from "@/components/board/people-picker";
 
 export const Route = createFileRoute("/_authenticated/w/$workspaceId/b/$boardId")({
   component: BoardCanvas,
@@ -213,6 +214,7 @@ function BoardCanvas() {
               columns={columns}
               items={itemsByGroup.get(g.id) ?? []}
               values={valuesByItem}
+              workspaceId={workspaceId}
               onAddItem={() =>
                 createItemFn({ data: { boardId, groupId: g.id, title: "New item" } }).then(invalidate)
               }
@@ -285,6 +287,7 @@ function GroupSection(props: {
   columns: Col[];
   items: Item[];
   values: Map<string, Map<string, Val>>;
+  workspaceId: string;
   onAddItem: () => void;
   onDeleteGroup: () => void;
   onUpdateGroup: (patch: Partial<Group>) => void;
@@ -431,6 +434,7 @@ function GroupSection(props: {
                       <Cell
                         column={c}
                         value={values.get(it.id)?.get(c.id) ?? null}
+                        workspaceId={props.workspaceId}
                         onSave={(patch) =>
                           props.onUpsertValue({ itemId: it.id, columnId: c.id, ...patch })
                         }
@@ -463,10 +467,12 @@ function GroupSection(props: {
 function Cell({
   column,
   value,
+  workspaceId,
   onSave,
 }: {
   column: Col;
   value: Val | null;
+  workspaceId: string;
   onSave: (patch: Record<string, any>) => Promise<unknown> | void;
 }) {
   if (column.kind === "status") {
@@ -545,7 +551,11 @@ function Cell({
   }
   if (column.kind === "people") {
     return (
-      <div className="text-xs text-muted-foreground italic px-1">People picker — soon</div>
+      <PeoplePicker
+        workspaceId={workspaceId}
+        value={value?.people_user_ids ?? []}
+        onChange={(next) => onSave({ people_user_ids: next })}
+      />
     );
   }
   // text & default

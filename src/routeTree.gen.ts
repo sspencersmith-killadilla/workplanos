@@ -14,7 +14,9 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
+import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authenticated/w.$workspaceId'
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
 import { Route as AuthenticatedWWorkspaceIdMembersRouteImport } from './routes/_authenticated/w.$workspaceId.members'
@@ -47,9 +49,19 @@ const FSlugRoute = FSlugRouteImport.update({
   path: '/f/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedWWorkspaceIdRoute =
@@ -98,7 +110,9 @@ const AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/account': typeof AuthenticatedAccountRoute
   '/app': typeof AuthenticatedAppRoute
+  '/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
@@ -112,7 +126,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/account': typeof AuthenticatedAccountRoute
   '/app': typeof AuthenticatedAppRoute
+  '/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
@@ -127,7 +143,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_authenticated/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
@@ -143,7 +161,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/account'
     | '/app'
+    | '/inbox'
     | '/f/$slug'
     | '/invite/$token'
     | '/w/$workspaceId'
@@ -157,7 +177,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/account'
     | '/app'
+    | '/inbox'
     | '/f/$slug'
     | '/invite/$token'
     | '/w/$workspaceId/dashboards'
@@ -171,7 +193,9 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/account'
     | '/_authenticated/app'
+    | '/_authenticated/inbox'
     | '/f/$slug'
     | '/invite/$token'
     | '/_authenticated/w/$workspaceId'
@@ -228,11 +252,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/inbox': {
+      id: '/_authenticated/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AuthenticatedInboxRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/app': {
       id: '/_authenticated/app'
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AuthenticatedAppRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/account': {
+      id: '/_authenticated/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AuthenticatedAccountRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/w/$workspaceId': {
@@ -329,12 +367,16 @@ const AuthenticatedWWorkspaceIdRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedAppRoute: typeof AuthenticatedAppRoute
+  AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedWWorkspaceIdRoute: typeof AuthenticatedWWorkspaceIdRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedAppRoute: AuthenticatedAppRoute,
+  AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedWWorkspaceIdRoute: AuthenticatedWWorkspaceIdRouteWithChildren,
 }
 

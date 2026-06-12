@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 function NotFoundComponent() {
   return (
@@ -130,6 +131,30 @@ function RootComponent() {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      if (event === "SIGNED_IN") {
+        // Enforce account lock: if the signed-in profile is locked, sign out.
+        (async () => {
+          try {
+            const { data: u } = await supabase.auth.getUser();
+            if (!u.user) return;
+            const { data } = await supabase
+              .from("profiles")
+              .select("is_locked, locked_reason")
+              .eq("id", u.user.id)
+              .maybeSingle();
+            if (data?.is_locked) {
+              toast.error(
+                data.locked_reason
+                  ? `Account locked: ${data.locked_reason}`
+                  : "Your account has been locked by an administrator.",
+              );
+              await supabase.auth.signOut();
+            }
+          } catch {
+            /* non-fatal */
+          }
+        })();
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, [queryClient, router]);

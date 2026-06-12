@@ -484,6 +484,47 @@ export type Database = {
           },
         ]
       }
+      item_files: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          mime_type: string | null
+          name: string
+          path: string
+          size_bytes: number | null
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          mime_type?: string | null
+          name: string
+          path: string
+          size_bytes?: number | null
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          mime_type?: string | null
+          name?: string
+          path?: string
+          size_bytes?: number | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_files_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_values: {
         Row: {
           column_id: string

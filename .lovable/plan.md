@@ -1,107 +1,66 @@
 
-# Plan: WorkOS — a Monday-style workflow & project platform
+# Path to Production — Free & Open Source
 
-A premium, Linear-inspired collaboration platform built on TanStack Start + Lovable Cloud (Postgres/Supabase) + server functions. No AI features.
+No billing, ever. Scope below covers every gap identified in the readiness audit, ordered by user impact and dependency.
 
-## Build phases
+---
 
-Because the spec is large, I'll ship it in ordered phases inside this same project. Each phase ends in a working, testable surface — you can stop me between phases if priorities shift.
+## Phase 10 — Workspace Members & Invites
+Unblocks team collaboration (today only the owner can use a workspace).
 
-### Phase 1 — Foundation: Cloud, auth, schema, design system
-1. Enable Lovable Cloud and configure Email/Password + Google sign-in (managed broker).
-2. Create the relational schema (see "Database schema" below) via one migration: workspaces, memberships, boards, groups, columns, items, sub-items, cell values, comments, activity log, automations, forms, dashboards. RLS on every table, scoped through `workspace_members` + `has_role` security-definer functions.
-3. Install design system: Linear-inspired premium tokens in `src/styles.css` (oklch palette, sharp 6px radii, IBM Plex Sans + JetBrains Mono via `<link>` in `__root.tsx`, dark-first with light mode, dense spacing scale, subtle shadows, keyboard-driven focus rings).
-4. Auth routes (`/auth`, `/auth/callback`) and the integration-managed `_authenticated` layout. Sign-out hygiene wired in root.
+- New server fns (`src/lib/members.functions.ts`): `listMembers`, `inviteMember` (by email), `acceptInvite`, `updateMemberRole`, `removeMember`, `leaveWorkspace`.
+- New table `workspace_invites` (email, workspace_id, role, token, expires_at, invited_by). RLS + GRANTs per house rules.
+- Accept flow: public route `/invite/$token` → if signed-in, accept; else send to `/auth` then back.
+- UI: `w.$workspaceId.members.tsx` — list, role dropdown (owner/admin/member/viewer), invite form, pending invites, remove/leave actions.
+- Sidebar link "Members" + owner-only "Settings".
 
-### Phase 2 — App shell & workspace navigation
-- Left rail: workspace switcher + collapsible board tree, command palette (⌘K) for jump-to-board/item.
-- Top bar: breadcrumbs, search, user menu, presence avatars.
-- Workspace settings page: members, invites by email, roles (owner / admin / member / viewer) stored in `workspace_members`.
+## Phase 11 — Profile & Account Settings
+- Route `/_authenticated/account.tsx`: update name, avatar (upload to existing storage), change password, sign out everywhere.
+- Server fns in `src/lib/profile.functions.ts`.
+- Avatar shown in sidebar + item assignees.
 
-### Phase 3 — Boards: structure, groups, items, sub-items
-- Board CRUD, group CRUD (color-coded, reorderable), item CRUD with sub-items.
-- Drag-to-reorder via dnd-kit (groups, items within a group, items between groups).
-- Optimistic mutations with TanStack Query + server functions; realtime updates via Supabase channels for cross-user sync.
+## Phase 12 — Notifications
+- Inbox popover in top bar with unread badge, realtime subscribe to `notifications` table for current user.
+- Triggers (DB): on `comments` insert with @mention, on `items` assignee change, on automation runs that target a user.
+- Mark-as-read / mark-all-read server fns.
+- Route `/_authenticated/inbox.tsx` for full history.
 
-### Phase 4 — Dynamic custom columns (the engine)
-Column types implemented natively: `status`, `people`, `date`, `timeline`, `number`, `formula`, `link`, plus `text` as base.
-- Per-board column definitions stored as rows in `board_columns` with a typed `settings` jsonb (status labels & colors, formula expression, number format/currency).
-- Cell values stored in `item_values` (one row per item × column) with a typed value column per kind (`text_value`, `number_value`, `date_value`, `date_end_value`, `link_url`, `link_label`, `status_option_id`, `people_user_ids uuid[]`).
-- Inline editors for each column type. Column footer aggregations (sum/avg/count/min/max) computed in DB view.
-- Add / rename / reorder / hide / delete columns from a column-header menu.
+## Phase 13 — People Column + Global Search
+- People picker: replace "soon" placeholder. Stores `user_id[]` in item_values; assignee chips with avatar; filter by assignee in views.
+- Global search: cmd+k palette. Server fn `search(workspaceId, q)` queries boards, items (name + text values), comments. Ranked, grouped results, deep links.
 
-### Phase 5 — Views (tabbed pivot over same data)
-- Main Table — virtualized grid (tanstack-virtual), sticky first column, frozen header, inline editing, multi-select, bulk actions.
-- Kanban — dnd-kit columns grouped by chosen Status column; drag card to change status.
-- Calendar — month grid powered by a chosen Date or Timeline column; click date to create item.
-- Workload — per-assignee swimlanes with per-day bars summing timeline items; capacity hint by item count.
+## Phase 14 — Board UX polish
+- Drag-to-reorder groups and items in Table view (dnd-kit, persist `position`).
+- View settings UI: filters, group-by, sort, hidden columns — persisted to `board_views.settings` JSONB. Apply across Table/Kanban/Calendar/Workload.
+- Mobile responsive board canvas: stacked card list under `md`, sticky header, touch-friendly drawer.
+- Error boundaries on each route, retry buttons that call `router.invalidate()`.
 
-Each view is a row in `board_views` (kind, settings) so users can save multiple per board.
+## Phase 15 — Data lifecycle & resilience
+- Archive/soft-delete: `archived_at` on boards/items; "Archived" filter; restore action; hard delete after 30 days via pg_cron.
+- Export: per-board CSV + workspace JSON export server fn (admin/owner only).
+- Comments edit + delete (author or admin).
+- Activity log: ensure every mutation writes to `item_activity` (assignee change, status change, value edits, file add/remove).
+- Performance: paginate items per group (50/page), virtualize long lists, fetch values per visible page rather than whole board.
+- Rate limiting on auth + invite + search fns (in-memory token bucket per user-id is fine for self-host).
 
-### Phase 6 — Collaboration drawer
-- Click any item → right-side sheet with tabs: **Updates** (rich-text comments via TipTap, edit history), **Activity** (immutable change log from `item_activity`), **Files** (Lovable Cloud storage), **Sub-items**.
-- @mentions trigger in-app notifications row in `notifications`.
+## Phase 16 — Self-host & docs polish
+- Update `USER_GUIDE.md`: member roles, invites, notifications, search, keyboard shortcuts, view settings, export/restore.
+- Add `DEPLOY.md`: env vars, Supabase project setup script, migrations, OAuth provider setup, Cloudflare/Vercel build commands.
+- `docker-compose.yml` for fully local Supabase + app.
+- Seed script for demo workspace.
+- Keyboard shortcuts: `?` cheat-sheet, `c` new item, `/` focus search, `g b` go to boards.
 
-### Phase 7 — Forms (public intake)
-- Form builder bound to a board: pick which columns are public, set labels/help text, required flags.
-- Public route `/f/$formId` (no auth) renders form; submission goes through a `/api/public/forms/$formId/submit` server route that validates with Zod, verifies the form is published, and inserts a new item via `supabaseAdmin`.
-- Shareable URL, submission counter, optional thank-you message and redirect.
+---
 
-### Phase 8 — Automations (no AI)
-- Visual builder: pick a trigger, pick an action, save as `automation_rules`.
-- Triggers: status change to X, person assigned, date arrives, item created, sub-item completed.
-- Actions: set another status, reassign person, push notification, create sub-item, move to group.
-- Execution: synchronous triggers run inside the mutating server function (after RLS-checked write). Date-based triggers run via a `pg_cron` job hitting `/api/public/automations/tick` (signature-verified) every 5 min.
+## Out of scope (explicit)
+- Billing, plans, Stripe/Paddle. Free forever.
+- SSO/SAML, advanced enterprise audit (basic activity log only).
+- Formula column, Timeline view, board templates marketplace — nice-to-haves, deferred.
 
-### Phase 9 — Dashboards
-- Workspace-level dashboards = grid of widgets (`dashboards`, `dashboard_widgets`).
-- Widget kinds: progress battery (status distribution bar), number tile (sum/avg from numeric column across one or many boards), chart (recharts: bar/pie/line over time), people workload mini.
-- Widgets configured by picking source boards + column + aggregation.
+## Technical notes
+- All new tables follow the GRANT → RLS → POLICY order; user-scoped policies via `is_member` / `has_ws_role`.
+- All new server fns use `requireSupabaseAuth` + workspace-role checks. Privileged ops (invite accept by token) load `supabaseAdmin` inside the handler.
+- Notifications + search use realtime channels already wired in `__root.tsx`.
+- No new external services required; everything runs on Lovable Cloud or any self-hosted Supabase.
 
-### Phase 10 — Polish pass
-- Keyboard shortcuts (j/k navigation, ⌘Enter to save, / to focus search).
-- Empty states, skeleton loaders, toasts (sonner), error boundaries on every route.
-- SEO metadata on every public route (auth, form, landing), share-card OG for forms.
-
-## Database schema (high level)
-
-```text
-profiles(id pk → auth.users, full_name, avatar_url, email)
-workspaces(id, name, slug, owner_id, created_at)
-workspace_members(workspace_id, user_id, role enum, PRIMARY KEY(workspace_id, user_id))
-boards(id, workspace_id, name, description, icon, color, position)
-board_views(id, board_id, kind enum, name, settings jsonb, position)
-groups(id, board_id, name, color, position, collapsed)
-items(id, board_id, group_id, parent_item_id nullable, title, position, created_by, created_at)
-board_columns(id, board_id, kind enum, title, settings jsonb, position, width)
-item_values(item_id, column_id,
-            text_value, number_value, date_value, date_end_value,
-            link_url, link_label, status_option_id, people_user_ids uuid[])
-            PRIMARY KEY(item_id, column_id)
-comments(id, item_id, author_id, body_json, created_at, edited_at)
-item_activity(id, item_id, actor_id, kind, payload jsonb, created_at)
-notifications(id, user_id, kind, payload jsonb, read_at, created_at)
-forms(id, board_id, slug, title, description, fields jsonb, is_published, redirect_url)
-form_submissions(id, form_id, item_id, payload jsonb, submitted_at)
-automation_rules(id, board_id, trigger jsonb, actions jsonb, enabled, created_by)
-automation_runs(id, rule_id, item_id, status, error, ran_at)
-dashboards(id, workspace_id, name, layout jsonb)
-dashboard_widgets(id, dashboard_id, kind, settings jsonb, position)
-```
-
-- RLS: every table policy resolves through `workspace_members` membership of the row's owning workspace, with role checks for write operations. `has_role(_user_id, _workspace_id, _role)` is `SECURITY DEFINER` to avoid recursion.
-- Aggregates exposed as Postgres views for column footers and dashboard widgets.
-
-## Technical details (for reference)
-
-- Reads default to TanStack Query `ensureQueryData` in loader + `useSuspenseQuery` in component.
-- All writes go through `createServerFn` with `requireSupabaseAuth`; admin-only ops use `supabaseAdmin` loaded inside the handler.
-- Realtime: subscribe per board to `items`, `item_values`, `comments` channels; invalidate the affected query keys.
-- Drag-and-drop: dnd-kit across Kanban, Table row reorder, Group reorder, Dashboard widget grid.
-- Rich text: TipTap with image upload to Lovable Cloud storage.
-- Charts: recharts.
-- Virtualization: @tanstack/react-virtual for table and large item lists.
-
-## What I'd like to confirm before starting
-
-- Sound good to start with **Phase 1 + Phase 2** in the first build (foundation + shell + auth) so you can sign in and see workspaces before I move into boards/columns? Or do you want me to push straight through Phases 1–4 in one shot (foundation + boards + columns + table view) for a more demo-able first deliverable? I'll default to **Phases 1–4 in the first build** unless you tell me otherwise.
+Each phase is independently shippable; recommend executing in order. After phase 12 the product is genuinely usable by a team; phases 13–16 bring it to production polish.

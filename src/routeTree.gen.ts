@@ -12,10 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authenticated/w.$workspaceId'
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
+import { Route as AuthenticatedWWorkspaceIdMembersRouteImport } from './routes/_authenticated/w.$workspaceId.members'
 import { Route as AuthenticatedWWorkspaceIdDashboardsRouteImport } from './routes/_authenticated/w.$workspaceId.dashboards'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.forms'
@@ -33,6 +35,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FSlugRoute = FSlugRouteImport.update({
@@ -55,6 +62,12 @@ const AuthenticatedWWorkspaceIdIndexRoute =
   AuthenticatedWWorkspaceIdIndexRouteImport.update({
     id: '/',
     path: '/',
+    getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
+  } as any)
+const AuthenticatedWWorkspaceIdMembersRoute =
+  AuthenticatedWWorkspaceIdMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
     getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
   } as any)
 const AuthenticatedWWorkspaceIdDashboardsRoute =
@@ -87,8 +100,10 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/app': typeof AuthenticatedAppRoute
   '/f/$slug': typeof FSlugRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
   '/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
@@ -99,7 +114,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/app': typeof AuthenticatedAppRoute
   '/f/$slug': typeof FSlugRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
   '/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
@@ -112,8 +129,10 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/f/$slug': typeof FSlugRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/_authenticated/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/_authenticated/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/_authenticated/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/_authenticated/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/_authenticated/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
   '/_authenticated/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
@@ -126,8 +145,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/app'
     | '/f/$slug'
+    | '/invite/$token'
     | '/w/$workspaceId'
     | '/w/$workspaceId/dashboards'
+    | '/w/$workspaceId/members'
     | '/w/$workspaceId/'
     | '/w/$workspaceId/b/$boardId'
     | '/w/$workspaceId/b/$boardId/automations'
@@ -138,7 +159,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/app'
     | '/f/$slug'
+    | '/invite/$token'
     | '/w/$workspaceId/dashboards'
+    | '/w/$workspaceId/members'
     | '/w/$workspaceId'
     | '/w/$workspaceId/b/$boardId'
     | '/w/$workspaceId/b/$boardId/automations'
@@ -150,8 +173,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/app'
     | '/f/$slug'
+    | '/invite/$token'
     | '/_authenticated/w/$workspaceId'
     | '/_authenticated/w/$workspaceId/dashboards'
+    | '/_authenticated/w/$workspaceId/members'
     | '/_authenticated/w/$workspaceId/'
     | '/_authenticated/w/$workspaceId/b/$boardId'
     | '/_authenticated/w/$workspaceId/b/$boardId/automations'
@@ -163,6 +188,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   FSlugRoute: typeof FSlugRoute
+  InviteTokenRoute: typeof InviteTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -186,6 +212,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/f/$slug': {
@@ -214,6 +247,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/w/$workspaceId/'
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdIndexRouteImport
+      parentRoute: typeof AuthenticatedWWorkspaceIdRoute
+    }
+    '/_authenticated/w/$workspaceId/members': {
+      id: '/_authenticated/w/$workspaceId/members'
+      path: '/members'
+      fullPath: '/w/$workspaceId/members'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdMembersRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdRoute
     }
     '/_authenticated/w/$workspaceId/dashboards': {
@@ -267,6 +307,7 @@ const AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren =
 
 interface AuthenticatedWWorkspaceIdRouteChildren {
   AuthenticatedWWorkspaceIdDashboardsRoute: typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  AuthenticatedWWorkspaceIdMembersRoute: typeof AuthenticatedWWorkspaceIdMembersRoute
   AuthenticatedWWorkspaceIdIndexRoute: typeof AuthenticatedWWorkspaceIdIndexRoute
   AuthenticatedWWorkspaceIdBBoardIdRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
 }
@@ -275,6 +316,8 @@ const AuthenticatedWWorkspaceIdRouteChildren: AuthenticatedWWorkspaceIdRouteChil
   {
     AuthenticatedWWorkspaceIdDashboardsRoute:
       AuthenticatedWWorkspaceIdDashboardsRoute,
+    AuthenticatedWWorkspaceIdMembersRoute:
+      AuthenticatedWWorkspaceIdMembersRoute,
     AuthenticatedWWorkspaceIdIndexRoute: AuthenticatedWWorkspaceIdIndexRoute,
     AuthenticatedWWorkspaceIdBBoardIdRoute:
       AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren,
@@ -303,6 +346,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   FSlugRoute: FSlugRoute,
+  InviteTokenRoute: InviteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -122,9 +122,9 @@ export const listAutomationRuns = createServerFn({ method: "GET" })
     if (!ids.length) return [];
     const { data: runs, error } = await context.supabase
       .from("automation_runs")
-      .select("id, rule_id, item_id, status, error, created_at")
+      .select("id, rule_id, item_id, status, error, ran_at")
       .in("rule_id", ids)
-      .order("created_at", { ascending: false })
+      .order("ran_at", { ascending: false })
       .limit(50);
     if (error) throw new Error(error.message);
     const nameById = new Map((rules ?? []).map((r) => [r.id, r.name]));

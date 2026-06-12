@@ -16,6 +16,7 @@ import {
   Link2,
   Expand,
   FileText,
+  Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -191,6 +192,13 @@ function BoardCanvas() {
           className="ml-3 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50"
         >
           <FileText className="h-3.5 w-3.5" /> Forms
+        </Link>
+        <Link
+          to="/w/$workspaceId/b/$boardId/automations"
+          params={{ workspaceId, boardId }}
+          className="ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+        >
+          <Zap className="h-3.5 w-3.5" /> Automations
         </Link>
       </div>
 

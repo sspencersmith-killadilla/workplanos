@@ -158,12 +158,23 @@ function WorkspaceShell() {
         </div>
 
         <div className="px-2 py-2 border-t border-border/60 flex items-center justify-between">
-          <button
-            className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground rounded-md hover:bg-muted"
-            onClick={signOut}
-          >
-            <LogOut className="h-3.5 w-3.5" /> Sign out
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground rounded-md hover:bg-muted"
+              onClick={signOut}
+            >
+              <LogOut className="h-3.5 w-3.5" /> Sign out
+            </button>
+            <a
+              href="/USER_GUIDE.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-7 w-7 grid place-items-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
+              title="Open user guide"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+            </a>
+          </div>
           <button className="h-7 w-7 grid place-items-center rounded-md hover:bg-muted text-muted-foreground">
             <Settings className="h-3.5 w-3.5" />
           </button>

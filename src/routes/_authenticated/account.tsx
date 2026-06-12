@@ -78,6 +78,13 @@ function AccountPage() {
 
   async function changePassword() {
     if (password.length < 6) return toast.error("Password must be at least 6 characters");
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      toast.error("Your session expired. Please sign in again.");
+      navigate({ to: "/auth", replace: true });
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ password });
     if (error) return toast.error(error.message);
     setPassword("");

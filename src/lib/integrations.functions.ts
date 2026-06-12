@@ -110,12 +110,106 @@ export const listIntegrationDispatches = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("integration_dispatches")
-      .select("id, item_id, direction, status_code, error, attempts, created_at")
+      .select("id, item_id, direction, status_code, error, attempts, next_retry_at, payload, created_at")
       .eq("workspace_id", data.workspaceId)
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) throw new Error(error.message);
     return rows ?? [];
+  });
+
+/* ============ Integration status / health ============ */
+
+export const getIntegrationStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { workspaceId: string }) =>
+    z.object({ workspaceId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const ws = data.workspaceId;
+    const lastSuccess = async (direction: "inbound" | "outbound") => {
+      const { data: row } = await context.supabase
+        .from("integration_dispatches")
+        .select("created_at")
+        .eq("workspace_id", ws)
+        .eq("direction", direction)
+        .is("error", null)
+        .lt("status_code", 400)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return row?.created_at ?? null;
+    };
+    const [inbound, outbound, failedRes] = await Promise.all([
+      lastSuccess("inbound"),
+      lastSuccess("outbound"),
+      context.supabase
+        .from("integration_dispatches")
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", ws)
+        .not("error", "is", null),
+    ]);
+    return {
+      lastInbound: inbound,
+      lastOutbound: outbound,
+      failedCount: failedRes.count ?? 0,
+    };
+  });
+
+export const pingTess = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { workspaceId: string }) =>
+    z.object({ workspaceId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: ok } = await context.supabase.rpc("has_ws_role", {
+      _ws: data.workspaceId,
+      _user: context.userId,
+      _roles: ["owner"],
+    });
+    if (!ok) throw new Error("Only workspace owners can test the integration");
+    const { dispatchToTess } = await import("./tess-dispatch.server");
+    const res = await dispatchToTess({
+      workspaceId: data.workspaceId,
+      itemId: null,
+      type: "ping",
+      body: { sent_at: new Date().toISOString() },
+    });
+    return res;
+  });
+
+export const retryDispatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { dispatchId: string }) =>
+    z.object({ dispatchId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("integration_dispatches")
+      .select("id, workspace_id, item_id, direction, payload, attempts")
+      .eq("id", data.dispatchId)
+      .maybeSingle();
+    if (!row) throw new Error("Dispatch not found");
+
+    const { data: ok } = await context.supabase.rpc("has_ws_role", {
+      _ws: row.workspace_id,
+      _user: context.userId,
+      _roles: ["owner"],
+    });
+    if (!ok) throw new Error("Only workspace owners can retry dispatches");
+    if (row.direction !== "outbound") throw new Error("Only outbound dispatches can be retried");
+
+    const payload = row.payload as any;
+    const type = payload?.type ?? "item.updated";
+    const { dispatchToTess } = await import("./tess-dispatch.server");
+    const { type: _ignored, ...rest } = payload ?? {};
+    return await dispatchToTess({
+      workspaceId: row.workspace_id,
+      itemId: row.item_id ?? null,
+      type,
+      body: rest,
+    });
   });
 
 /* ============ Board embed token management ============ */

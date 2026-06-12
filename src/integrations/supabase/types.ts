@@ -178,6 +178,7 @@ export type Database = {
       }
       boards: {
         Row: {
+          archived_at: string | null
           color: string
           created_at: string
           created_by: string | null
@@ -190,6 +191,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          archived_at?: string | null
           color?: string
           created_at?: string
           created_by?: string | null
@@ -202,6 +204,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          archived_at?: string | null
           color?: string
           created_at?: string
           created_by?: string | null
@@ -584,6 +587,7 @@ export type Database = {
       }
       items: {
         Row: {
+          archived_at: string | null
           board_id: string
           created_at: string
           created_by: string | null
@@ -595,6 +599,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           board_id: string
           created_at?: string
           created_by?: string | null
@@ -606,6 +611,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           board_id?: string
           created_at?: string
           created_by?: string | null

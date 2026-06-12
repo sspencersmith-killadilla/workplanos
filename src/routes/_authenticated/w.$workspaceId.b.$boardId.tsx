@@ -47,6 +47,7 @@ import {
 import { cn } from "@/lib/utils";
 import { KanbanView, CalendarView, WorkloadView } from "@/components/board/views";
 import { ItemDrawer } from "@/components/board/item-drawer";
+import { PeoplePicker } from "@/components/board/people-picker";
 
 export const Route = createFileRoute("/_authenticated/w/$workspaceId/b/$boardId")({
   component: BoardCanvas,

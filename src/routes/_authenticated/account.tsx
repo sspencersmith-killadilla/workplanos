@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getMyProfile, updateMyProfile } from "@/lib/profile.functions";
 
+const AVATAR_BUCKET = "avatars";
+
 export const Route = createFileRoute("/_authenticated/account")({
   component: AccountPage,
 });
@@ -40,7 +42,7 @@ function AccountPage() {
 
   const save = useMutation({
     mutationFn: () =>
-      updateProfile({ data: { full_name: fullName, avatar_url: avatarUrl ?? undefined } }),
+      updateProfile({ data: { full_name: fullName.trim(), avatar_url: avatarUrl ?? undefined } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["my-profile"] });
       toast.success("Profile updated");
@@ -51,18 +53,22 @@ function AccountPage() {
   async function handleAvatar(file: File) {
     setUploading(true);
     try {
+      if (!profileQ.data?.id) throw new Error("Profile not loaded yet");
       const ext = file.name.split(".").pop() ?? "png";
-      const path = `avatars/${profileQ.data?.id}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("item-files").upload(path, file, {
+      const path = `${profileQ.data.id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from(AVATAR_BUCKET).upload(path, file, {
         upsert: true,
         contentType: file.type,
       });
       if (error) throw error;
       const { data: signed } = await supabase.storage
-        .from("item-files")
+        .from(AVATAR_BUCKET)
         .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
       if (!signed) throw new Error("Could not sign URL");
       setAvatarUrl(signed.signedUrl);
+      await updateProfile({ data: { avatar_url: signed.signedUrl } });
+      await qc.invalidateQueries({ queryKey: ["my-profile"] });
+      toast.success("Avatar updated");
     } catch (e: any) {
       toast.error(e?.message ?? "Upload failed");
     } finally {
@@ -72,6 +78,13 @@ function AccountPage() {
 
   async function changePassword() {
     if (password.length < 6) return toast.error("Password must be at least 6 characters");
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      toast.error("Your session expired. Please sign in again.");
+      navigate({ to: "/auth", replace: true });
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ password });
     if (error) return toast.error(error.message);
     setPassword("");

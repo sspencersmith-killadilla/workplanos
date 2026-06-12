@@ -35,7 +35,10 @@ function AppHome() {
       setName("");
       toast.success("Workspace created");
     },
-    onError: (e: any) => toast.error(e?.message ?? "Could not create workspace"),
+    onError: (e: any) => {
+      console.error("createWorkspace failed", e);
+      toast.error(e?.message ?? "Could not create workspace");
+    },
   });
 
   async function signOut() {

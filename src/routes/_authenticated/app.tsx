@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus, LogOut, Layout } from "lucide-react";
+import { Plus, LogOut, Layout, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { listMyWorkspaces, createWorkspace } from "@/lib/workspaces.functions";
 import { Button } from "@/components/ui/button";

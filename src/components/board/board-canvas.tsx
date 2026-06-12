@@ -17,6 +17,8 @@ import {
   Expand,
   FileText,
   Zap,
+  Share2,
+  Copy,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -32,6 +34,10 @@ import {
   upsertValue,
   updateBoard,
 } from "@/lib/boards.functions";
+import { getBoardEmbedToken, setBoardEmbedEnabled } from "@/lib/integrations.functions";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,

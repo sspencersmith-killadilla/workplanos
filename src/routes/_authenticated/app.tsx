@@ -51,11 +51,25 @@ function AppHome() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
             <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground font-bold">W</div>
-            WorkOS
+            WorkPlanOS
           </Link>
-          <Button variant="ghost" size="sm" onClick={signOut}>
-            <LogOut className="h-4 w-4 mr-2" /> Sign out
-          </Button>
+          <div className="flex items-center gap-1">
+            <Link
+              to="/help"
+              className="text-sm text-muted-foreground hover:text-foreground px-3 py-2 rounded-md hover:bg-muted transition-colors"
+            >
+              Help
+            </Link>
+            <Link
+              to="/account"
+              className="text-sm text-muted-foreground hover:text-foreground px-3 py-2 rounded-md hover:bg-muted transition-colors inline-flex items-center gap-1.5"
+            >
+              <User className="h-4 w-4" /> Account
+            </Link>
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" /> Sign out
+            </Button>
+          </div>
         </div>
       </header>
 

@@ -162,6 +162,13 @@ const SECTIONS: Section[] = [
     id: "shortcuts",
     title: "Keyboard shortcuts",
     body: (
+      <></>
+    ),
+  },
+  {
+    id: "tess-integration",
+    title: "Total Event System Solutions integration",
+    body: (
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b border-border">

@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users, User } from "lucide-react";
 import { InboxBell } from "@/components/InboxBell";
+import { SearchPalette } from "@/components/SearchPalette";
 import { supabase } from "@/integrations/supabase/client";
 import { getWorkspace } from "@/lib/workspaces.functions";
 import { listBoards, createBoard } from "@/lib/boards.functions";
@@ -207,6 +208,7 @@ function WorkspaceShell() {
       <main className="flex-1 min-w-0 overflow-hidden">
         <Outlet />
       </main>
+      <SearchPalette workspaceId={workspaceId} />
     </div>
   );
 }

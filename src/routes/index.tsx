@@ -5,9 +5,9 @@ import { ArrowRight, Layers, Sparkles, Workflow, Zap, GitBranch, BarChart3 } fro
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "WorkOS — Workflows your team can feel" },
+      { title: "WorkPlanOS — Workflows your team can feel" },
       { name: "description", content: "A premium, blazing-fast workflow & project platform. Boards, custom columns, kanban, calendar, workload, automations, forms, dashboards. No AI fluff." },
-      { property: "og:title", content: "WorkOS — Workflows your team can feel" },
+      { property: "og:title", content: "WorkPlanOS — Workflows your team can feel" },
       { property: "og:description", content: "Boards, kanban, calendar, workload, automations, intake forms, dashboards. The productivity engine teams ship with." },
     ],
   }),

@@ -26,8 +26,11 @@ export const updateMyProfile = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const patch: { full_name?: string; avatar_url?: string | null } = {};
-    if (data.full_name !== undefined) patch.full_name = data.full_name;
+    if (data.full_name !== undefined) patch.full_name = data.full_name.trim();
     if (data.avatar_url !== undefined) patch.avatar_url = data.avatar_url;
+    if (Object.keys(patch).length === 0) {
+      throw new Error("Nothing to update");
+    }
     const { data: row, error } = await context.supabase
       .from("profiles")
       .update(patch)

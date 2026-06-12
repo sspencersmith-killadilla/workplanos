@@ -22,7 +22,7 @@ export const listMembers = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: members, error } = await context.supabase
       .from("workspace_members")
-      .select("user_id, role, created_at")
+      .select("user_id, role, created_at, is_locked, locked_at, locked_reason")
       .eq("workspace_id", data.workspaceId);
     if (error) throw new Error(error.message);
     const ids = (members ?? []).map((m: any) => m.user_id);
@@ -37,6 +37,9 @@ export const listMembers = createServerFn({ method: "GET" })
       user_id: m.user_id,
       role: m.role,
       created_at: m.created_at,
+      is_locked: m.is_locked ?? false,
+      locked_at: m.locked_at ?? null,
+      locked_reason: m.locked_reason ?? null,
       profile: byId.get(m.user_id) ?? null,
     }));
   });

@@ -283,7 +283,7 @@ export function CalendarView({
       <EmptyState>Add a Date or Timeline column to use the Calendar view.</EmptyState>
     );
   }
-
+  const activeColId: string = colId;
   const monthStart = startOfMonth(month);
   const monthEnd = endOfMonth(month);
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -294,7 +294,7 @@ export function CalendarView({
     const m = new Map<string, { item: Item; isStart: boolean }[]>();
     for (const d of days) m.set(format(d, "yyyy-MM-dd"), []);
     for (const it of items) {
-      const v = getVal(values, it.id, colId);
+      const v = getVal(values, it.id, activeColId);
       if (!v?.date_value) continue;
       const start = new Date(v.date_value);
       const end = v.date_end_value ? new Date(v.date_end_value) : start;
@@ -306,7 +306,7 @@ export function CalendarView({
       }
     }
     return m;
-  }, [days, items, values, colId]);
+  }, [days, items, values, activeColId]);
 
   return (
     <div className="flex flex-col h-full">
@@ -431,7 +431,7 @@ export function WorkloadView({
       </EmptyState>
     );
   }
-
+  const activeDateColId: string = dateColId;
   const days = Array.from({ length: 14 }, (_, i) => addDays(weekStart, i));
 
   type Row = { key: string; label: string; items: Item[] };
@@ -440,7 +440,7 @@ export function WorkloadView({
   const byPerson = new Map<string, Item[]>();
 
   for (const it of items) {
-    const dv = getVal(values, it.id, dateColId);
+    const dv = getVal(values, it.id, activeDateColId);
     if (!dv?.date_value) continue;
     if (peopleColId) {
       const pv = getVal(values, it.id, peopleColId);
@@ -592,7 +592,7 @@ export function WorkloadView({
                 </div>
                 <div className="absolute inset-0 p-1 flex flex-col gap-1">
                   {row.items.map((it) => {
-                    const dv = getVal(values, it.id, dateColId);
+                    const dv = getVal(values, it.id, activeDateColId);
                     if (!dv?.date_value) return null;
                     const s = new Date(dv.date_value);
                     const e = dv.date_end_value

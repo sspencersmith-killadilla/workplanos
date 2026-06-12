@@ -16,6 +16,7 @@ import {
   Link2,
   Expand,
   FileText,
+  Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -140,6 +141,9 @@ function BoardCanvas() {
     return m;
   }, [data?.items]);
 
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const [drawerItemId, setDrawerItemId] = useState<string | null>(null);
+
   if (isLoading || !data) {
     return <div className="p-8 text-sm text-muted-foreground">Loading board…</div>;
   }
@@ -150,8 +154,6 @@ function BoardCanvas() {
   const allItems = ((data.items ?? []) as any[]).filter((i) => !i.parent_item_id) as Item[];
 
   const tableView = views.find((v) => v.kind === "table") ?? views[0];
-  const [activeViewId, setActiveViewId] = useState<string | null>(tableView?.id ?? null);
-  const [drawerItemId, setDrawerItemId] = useState<string | null>(null);
   const activeView =
     views.find((v) => v.id === activeViewId) ?? tableView ?? { id: "", kind: "table", name: "Table" };
 
@@ -191,6 +193,13 @@ function BoardCanvas() {
           className="ml-3 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50"
         >
           <FileText className="h-3.5 w-3.5" /> Forms
+        </Link>
+        <Link
+          to="/w/$workspaceId/b/$boardId/automations"
+          params={{ workspaceId, boardId }}
+          className="ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+        >
+          <Zap className="h-3.5 w-3.5" /> Automations
         </Link>
       </div>
 

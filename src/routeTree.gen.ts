@@ -18,6 +18,7 @@ import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authent
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.forms'
+import { Route as AuthenticatedWWorkspaceIdBBoardIdAutomationsRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.automations'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -67,6 +68,12 @@ const AuthenticatedWWorkspaceIdBBoardIdFormsRoute =
     path: '/forms',
     getParentRoute: () => AuthenticatedWWorkspaceIdBBoardIdRoute,
   } as any)
+const AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute =
+  AuthenticatedWWorkspaceIdBBoardIdAutomationsRouteImport.update({
+    id: '/automations',
+    path: '/automations',
+    getParentRoute: () => AuthenticatedWWorkspaceIdBBoardIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -76,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
+  '/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
   '/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +93,7 @@ export interface FileRoutesByTo {
   '/f/$slug': typeof FSlugRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
+  '/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
   '/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
 }
 export interface FileRoutesById {
@@ -97,6 +106,7 @@ export interface FileRoutesById {
   '/_authenticated/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/_authenticated/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/_authenticated/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
+  '/_authenticated/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
   '/_authenticated/w/$workspaceId/b/$boardId/forms': typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
 }
 export interface FileRouteTypes {
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/w/$workspaceId'
     | '/w/$workspaceId/'
     | '/w/$workspaceId/b/$boardId'
+    | '/w/$workspaceId/b/$boardId/automations'
     | '/w/$workspaceId/b/$boardId/forms'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/w/$workspaceId'
     | '/w/$workspaceId/b/$boardId'
+    | '/w/$workspaceId/b/$boardId/automations'
     | '/w/$workspaceId/b/$boardId/forms'
   id:
     | '__root__'
@@ -129,6 +141,7 @@ export interface FileRouteTypes {
     | '/_authenticated/w/$workspaceId'
     | '/_authenticated/w/$workspaceId/'
     | '/_authenticated/w/$workspaceId/b/$boardId'
+    | '/_authenticated/w/$workspaceId/b/$boardId/automations'
     | '/_authenticated/w/$workspaceId/b/$boardId/forms'
   fileRoutesById: FileRoutesById
 }
@@ -204,15 +217,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRoute
     }
+    '/_authenticated/w/$workspaceId/b/$boardId/automations': {
+      id: '/_authenticated/w/$workspaceId/b/$boardId/automations'
+      path: '/automations'
+      fullPath: '/w/$workspaceId/b/$boardId/automations'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRouteImport
+      parentRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRoute
+    }
   }
 }
 
 interface AuthenticatedWWorkspaceIdBBoardIdRouteChildren {
+  AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute: typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
   AuthenticatedWWorkspaceIdBBoardIdFormsRoute: typeof AuthenticatedWWorkspaceIdBBoardIdFormsRoute
 }
 
 const AuthenticatedWWorkspaceIdBBoardIdRouteChildren: AuthenticatedWWorkspaceIdBBoardIdRouteChildren =
   {
+    AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute:
+      AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute,
     AuthenticatedWWorkspaceIdBBoardIdFormsRoute:
       AuthenticatedWWorkspaceIdBBoardIdFormsRoute,
   }

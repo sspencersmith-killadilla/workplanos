@@ -207,15 +207,13 @@ function WorkspaceShell() {
             >
               <LogOut className="h-3.5 w-3.5" /> Sign out
             </button>
-            <a
-              href="/USER_GUIDE.md"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/help"
               className="h-7 w-7 grid place-items-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
-              title="Open user guide"
+              title="Open user manual"
             >
               <BookOpen className="h-3.5 w-3.5" />
-            </a>
+            </Link>
             <InboxBell />
             <Link
               to="/account"

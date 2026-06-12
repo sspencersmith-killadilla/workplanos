@@ -88,11 +88,13 @@ export function KanbanView({
   columns,
   values,
   onUpsertValue,
+  onOpenItem,
 }: {
   items: Item[];
   columns: Col[];
   values: Map<string, Map<string, Val>>;
   onUpsertValue: (p: any) => Promise<unknown>;
+  onOpenItem?: (id: string) => void;
 }) {
   const statusCols = statusColumns(columns);
   const [statusColId, setStatusColId] = useState<string | null>(
@@ -182,6 +184,7 @@ export function KanbanView({
                 label={lane.label}
                 color={lane.color}
                 items={byLane.get(lane.id) ?? []}
+                onOpenItem={onOpenItem}
               />
             ))}
           </div>
@@ -203,11 +206,13 @@ function KanbanLane({
   label,
   color,
   items,
+  onOpenItem,
 }: {
   laneId: string;
   label: string;
   color: string;
   items: Item[];
+  onOpenItem?: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `lane:${laneId}` });
   return (
@@ -230,7 +235,7 @@ function KanbanLane({
       </div>
       <div className="flex-1 overflow-y-auto p-2 space-y-2">
         {items.map((it) => (
-          <KanbanCard key={it.id} item={it} />
+          <KanbanCard key={it.id} item={it} onOpen={onOpenItem} />
         ))}
         {items.length === 0 && (
           <div className="text-xs text-muted-foreground/60 px-2 py-4 text-center">
@@ -242,7 +247,7 @@ function KanbanLane({
   );
 }
 
-function KanbanCard({ item }: { item: Item }) {
+function KanbanCard({ item, onOpen }: { item: Item; onOpen?: (id: string) => void }) {
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
     id: item.id,
   });
@@ -252,11 +257,27 @@ function KanbanCard({ item }: { item: Item }) {
       {...attributes}
       {...listeners}
       className={cn(
-        "bg-card border border-border/60 rounded-md px-3 py-2 text-sm cursor-grab active:cursor-grabbing hover:border-border transition-colors",
+        "bg-card border border-border/60 rounded-md px-3 py-2 text-sm cursor-grab active:cursor-grabbing hover:border-border transition-colors group",
         isDragging && "opacity-30",
       )}
+      onDoubleClick={() => onOpen?.(item.id)}
     >
-      {item.title}
+      <div className="flex items-center gap-2">
+        <span className="flex-1 truncate">{item.title}</span>
+        {onOpen && (
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(item.id);
+            }}
+            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
+            aria-label="Open"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 }

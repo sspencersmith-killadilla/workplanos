@@ -297,6 +297,24 @@ export const updateItem = createServerFn({ method: "POST" })
       await context.supabase
         .from("item_activity")
         .insert({ item_id: id, actor_id: context.userId, kind: "title_changed", payload: { title: rest.title } });
+      // Outbound: notify TESS when a linked item is renamed
+      try {
+        const { dispatchToTess, externalRefForItem, workspaceIdForItem } = await import(
+          "./tess-dispatch.server"
+        );
+        const ref = await externalRefForItem(id);
+        if (ref?.source === "tess") {
+          const wsId = await workspaceIdForItem(id);
+          if (wsId) {
+            await dispatchToTess({
+              workspaceId: wsId,
+              itemId: id,
+              type: "item.renamed",
+              body: { external_id: ref.external_id, title: rest.title },
+            });
+          }
+        }
+      } catch {}
     }
     if (groupId !== undefined) {
       await context.supabase
@@ -310,8 +328,32 @@ export const deleteItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    // Capture link info BEFORE delete so we can notify TESS
+    let tessRef: { external_id: string } | null = null;
+    let wsId: string | null = null;
+    try {
+      const { externalRefForItem, workspaceIdForItem } = await import("./tess-dispatch.server");
+      const ref = await externalRefForItem(data.id);
+      if (ref?.source === "tess") {
+        tessRef = { external_id: ref.external_id };
+        wsId = await workspaceIdForItem(data.id);
+      }
+    } catch {}
+
     const { error } = await context.supabase.from("items").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    if (tessRef && wsId) {
+      try {
+        const { dispatchToTess } = await import("./tess-dispatch.server");
+        await dispatchToTess({
+          workspaceId: wsId,
+          itemId: null,
+          type: "item.deleted",
+          body: { external_id: tessRef.external_id },
+        });
+      } catch {}
+    }
     return { ok: true };
   });
 

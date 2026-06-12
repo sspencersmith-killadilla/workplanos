@@ -62,6 +62,7 @@ function IntegrationsPage() {
   const [baseUrl, setBaseUrl] = useState("");
   const [tessWsId, setTessWsId] = useState("");
   const [revealed, setRevealed] = useState<string | null>(null);
+  const [pasteSecret, setPasteSecret] = useState("");
 
   // Hydrate form when data loads
   if (integQ.data && !boardId && integQ.data.target_board_id) {
@@ -71,7 +72,7 @@ function IntegrationsPage() {
   }
 
   const save = useMutation({
-    mutationFn: (rotate: boolean) =>
+    mutationFn: (opts: { rotate?: boolean; paste?: string }) =>
       upsertFn({
         data: {
           workspaceId,
@@ -79,11 +80,13 @@ function IntegrationsPage() {
           tessBaseUrl: baseUrl || null,
           tessWorkspaceId: tessWsId || null,
           enabled: true,
-          rotateSecret: rotate,
+          rotateSecret: opts.rotate ?? false,
+          sharedSecret: opts.paste ?? null,
         },
       }),
     onSuccess: (res) => {
       if (res.revealSecret) setRevealed(res.revealSecret);
+      setPasteSecret("");
       qc.invalidateQueries({ queryKey: ["tess-integration", workspaceId] });
       toast.success("Integration saved");
     },
@@ -231,6 +234,28 @@ function IntegrationsPage() {
             </div>
           )}
 
+          <div className="space-y-2 rounded-md border border-border/60 p-3 bg-muted/20">
+            <Label className="text-xs">Paste an existing secret from TESS</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                value={pasteSecret}
+                placeholder="Paste secret generated in TESS"
+                onChange={(e) => setPasteSecret(e.target.value)}
+              />
+              <Button
+                variant="outline"
+                disabled={!boardId || pasteSecret.trim().length < 16 || save.isPending}
+                onClick={() => save.mutate({ paste: pasteSecret.trim() })}
+              >
+                Save secret
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Use this when TESS generated the secret first. WPO and TESS must hold the
+              same value. Min 16 characters.
+            </p>
+          </div>
+
           {revealed && (
             <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 space-y-2">
               <div className="text-xs font-medium text-amber-600">
@@ -255,14 +280,14 @@ function IntegrationsPage() {
           <div className="flex items-center gap-2 pt-2">
             <Button
               disabled={!boardId || save.isPending}
-              onClick={() => save.mutate(false)}
+              onClick={() => save.mutate({ rotate: false })}
             >
               Save
             </Button>
             <Button
               variant="outline"
               disabled={save.isPending}
-              onClick={() => save.mutate(true)}
+              onClick={() => save.mutate({ rotate: true })}
             >
               {integQ.data ? "Rotate secret" : "Create + generate secret"}
             </Button>

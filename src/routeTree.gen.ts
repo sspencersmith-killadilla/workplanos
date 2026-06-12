@@ -16,6 +16,7 @@ import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authenticated/w.$workspaceId'
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
+import { Route as AuthenticatedWWorkspaceIdMembersRouteImport } from './routes/_authenticated/w.$workspaceId.members'
 import { Route as AuthenticatedWWorkspaceIdDashboardsRouteImport } from './routes/_authenticated/w.$workspaceId.dashboards'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.forms'
@@ -57,6 +58,12 @@ const AuthenticatedWWorkspaceIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
   } as any)
+const AuthenticatedWWorkspaceIdMembersRoute =
+  AuthenticatedWWorkspaceIdMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
+  } as any)
 const AuthenticatedWWorkspaceIdDashboardsRoute =
   AuthenticatedWWorkspaceIdDashboardsRouteImport.update({
     id: '/dashboards',
@@ -89,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/f/$slug': typeof FSlugRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
   '/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
@@ -100,6 +108,7 @@ export interface FileRoutesByTo {
   '/app': typeof AuthenticatedAppRoute
   '/f/$slug': typeof FSlugRoute
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
   '/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
@@ -114,6 +123,7 @@ export interface FileRoutesById {
   '/f/$slug': typeof FSlugRoute
   '/_authenticated/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/_authenticated/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  '/_authenticated/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
   '/_authenticated/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/_authenticated/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
   '/_authenticated/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/w/$workspaceId'
     | '/w/$workspaceId/dashboards'
+    | '/w/$workspaceId/members'
     | '/w/$workspaceId/'
     | '/w/$workspaceId/b/$boardId'
     | '/w/$workspaceId/b/$boardId/automations'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/f/$slug'
     | '/w/$workspaceId/dashboards'
+    | '/w/$workspaceId/members'
     | '/w/$workspaceId'
     | '/w/$workspaceId/b/$boardId'
     | '/w/$workspaceId/b/$boardId/automations'
@@ -152,6 +164,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/_authenticated/w/$workspaceId'
     | '/_authenticated/w/$workspaceId/dashboards'
+    | '/_authenticated/w/$workspaceId/members'
     | '/_authenticated/w/$workspaceId/'
     | '/_authenticated/w/$workspaceId/b/$boardId'
     | '/_authenticated/w/$workspaceId/b/$boardId/automations'
@@ -216,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdIndexRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdRoute
     }
+    '/_authenticated/w/$workspaceId/members': {
+      id: '/_authenticated/w/$workspaceId/members'
+      path: '/members'
+      fullPath: '/w/$workspaceId/members'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdMembersRouteImport
+      parentRoute: typeof AuthenticatedWWorkspaceIdRoute
+    }
     '/_authenticated/w/$workspaceId/dashboards': {
       id: '/_authenticated/w/$workspaceId/dashboards'
       path: '/dashboards'
@@ -267,6 +287,7 @@ const AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren =
 
 interface AuthenticatedWWorkspaceIdRouteChildren {
   AuthenticatedWWorkspaceIdDashboardsRoute: typeof AuthenticatedWWorkspaceIdDashboardsRoute
+  AuthenticatedWWorkspaceIdMembersRoute: typeof AuthenticatedWWorkspaceIdMembersRoute
   AuthenticatedWWorkspaceIdIndexRoute: typeof AuthenticatedWWorkspaceIdIndexRoute
   AuthenticatedWWorkspaceIdBBoardIdRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
 }
@@ -275,6 +296,8 @@ const AuthenticatedWWorkspaceIdRouteChildren: AuthenticatedWWorkspaceIdRouteChil
   {
     AuthenticatedWWorkspaceIdDashboardsRoute:
       AuthenticatedWWorkspaceIdDashboardsRoute,
+    AuthenticatedWWorkspaceIdMembersRoute:
+      AuthenticatedWWorkspaceIdMembersRoute,
     AuthenticatedWWorkspaceIdIndexRoute: AuthenticatedWWorkspaceIdIndexRoute,
     AuthenticatedWWorkspaceIdBBoardIdRoute:
       AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren,
@@ -307,3 +330,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

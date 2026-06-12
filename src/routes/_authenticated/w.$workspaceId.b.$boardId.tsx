@@ -380,6 +380,13 @@ function GroupSection(props: {
                 <tr key={it.id} className="border-t border-border/40 hover:bg-muted/20 group">
                   <td className="px-3 py-1.5 sticky left-0 bg-background z-10 border-r border-border/40 group-hover:bg-muted/20">
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => props.onOpenItem(it.id)}
+                        className="opacity-0 group-hover:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
+                        aria-label="Open item"
+                      >
+                        <Expand className="h-3 w-3" />
+                      </button>
                       <InlineEdit
                         value={it.title}
                         onSave={(v) => props.onUpdateItem(it.id, v)}

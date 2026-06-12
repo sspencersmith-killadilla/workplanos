@@ -223,3 +223,43 @@ export const acceptInvite = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { workspaceId: workspaceId as string };
   });
+
+export const setMemberLock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (d: { workspaceId: string; userId: string; lock: boolean; reason?: string }) =>
+      z
+        .object({
+          workspaceId: z.string().uuid(),
+          userId: z.string().uuid(),
+          lock: z.boolean(),
+          reason: z.string().max(500).optional(),
+        })
+        .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context, data.workspaceId);
+    const { data: ws } = await context.supabase
+      .from("workspaces")
+      .select("owner_id")
+      .eq("id", data.workspaceId)
+      .maybeSingle();
+    if (ws?.owner_id === data.userId) {
+      throw new Error("Cannot lock the workspace owner");
+    }
+    const patch: any = data.lock
+      ? {
+          is_locked: true,
+          locked_at: new Date().toISOString(),
+          locked_by: context.userId,
+          locked_reason: data.reason ?? null,
+        }
+      : { is_locked: false, locked_at: null, locked_by: null, locked_reason: null };
+    const { error } = await context.supabase
+      .from("workspace_members")
+      .update(patch)
+      .eq("workspace_id", data.workspaceId)
+      .eq("user_id", data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

@@ -41,6 +41,7 @@ export const upsertTessIntegration = createServerFn({ method: "POST" })
       tessWorkspaceId?: string | null;
       enabled?: boolean;
       rotateSecret?: boolean;
+      sharedSecret?: string | null;
     }) =>
       z
         .object({
@@ -50,6 +51,7 @@ export const upsertTessIntegration = createServerFn({ method: "POST" })
           tessWorkspaceId: z.string().max(120).nullable().optional(),
           enabled: z.boolean().optional(),
           rotateSecret: z.boolean().optional(),
+          sharedSecret: z.string().min(16).max(256).nullable().optional(),
         })
         .parse(d),
   )
@@ -69,7 +71,13 @@ export const upsertTessIntegration = createServerFn({ method: "POST" })
       .eq("kind", "tess")
       .maybeSingle();
 
-    const newSecret = !existing || data.rotateSecret ? randomToken() : null;
+    // Priority: explicit paste > rotate > auto-generate on first create
+    const pasted = data.sharedSecret?.trim() || null;
+    const newSecret = pasted
+      ? pasted
+      : !existing || data.rotateSecret
+        ? randomToken()
+        : null;
     const revealSecret = newSecret;
 
     if (existing) {

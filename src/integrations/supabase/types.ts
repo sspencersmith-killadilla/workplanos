@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       automation_rules: {
         Row: {
           actions: Json
@@ -680,6 +701,10 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_locked: boolean
+          locked_at: string | null
+          locked_by: string | null
+          locked_reason: string | null
           updated_at: string
         }
         Insert: {
@@ -688,6 +713,10 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
+          locked_reason?: string | null
           updated_at?: string
         }
         Update: {
@@ -696,7 +725,35 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
+          locked_reason?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -747,18 +804,30 @@ export type Database = {
       workspace_members: {
         Row: {
           created_at: string
+          is_locked: boolean
+          locked_at: string | null
+          locked_by: string | null
+          locked_reason: string | null
           role: Database["public"]["Enums"]["workspace_role"]
           user_id: string
           workspace_id: string
         }
         Insert: {
           created_at?: string
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
+          locked_reason?: string | null
           role?: Database["public"]["Enums"]["workspace_role"]
           user_id: string
           workspace_id: string
         }
         Update: {
           created_at?: string
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
+          locked_reason?: string | null
           role?: Database["public"]["Enums"]["workspace_role"]
           user_id?: string
           workspace_id?: string
@@ -822,6 +891,13 @@ export type Database = {
           workspace_name: string
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_ws_role: {
         Args: {
           _roles: Database["public"]["Enums"]["workspace_role"][]
@@ -830,10 +906,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_actor_active: {
+        Args: { _user: string; _ws: string }
+        Returns: boolean
+      }
       is_member: { Args: { _user: string; _ws: string }; Returns: boolean }
       item_workspace: { Args: { _item: string }; Returns: string }
     }
     Enums: {
+      app_role: "super_admin"
       column_kind:
         | "text"
         | "status"
@@ -972,6 +1053,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["super_admin"],
       column_kind: [
         "text",
         "status",

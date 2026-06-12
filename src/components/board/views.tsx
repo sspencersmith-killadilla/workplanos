@@ -110,8 +110,8 @@ export function KanbanView({
       </EmptyState>
     );
   }
-
-  const col = statusCols.find((c) => c.id === statusColId)!;
+  const activeStatusColId: string = statusColId;
+  const col = statusCols.find((c) => c.id === activeStatusColId)!;
   const opts: StatusOpt[] = col.settings?.options ?? [];
   const NONE = "__none";
   const lanes: { id: string; label: string; color: string }[] = [
@@ -122,7 +122,7 @@ export function KanbanView({
   const byLane = new Map<string, Item[]>();
   for (const lane of lanes) byLane.set(lane.id, []);
   for (const it of items) {
-    const v = getVal(values, it.id, statusColId);
+    const v = getVal(values, it.id, activeStatusColId);
     const sid = v?.status_option_id ?? NONE;
     if (!byLane.has(sid)) byLane.set(NONE, byLane.get(NONE) ?? []);
     (byLane.get(sid) ?? byLane.get(NONE)!).push(it);
@@ -138,12 +138,13 @@ export function KanbanView({
     const newStatus = String(overId).startsWith("lane:")
       ? String(overId).slice(5)
       : null;
-    const current = getVal(values, itemId, statusColId)?.status_option_id ?? null;
+    const current =
+      getVal(values, itemId, activeStatusColId)?.status_option_id ?? null;
     const next = newStatus === "__none" ? null : newStatus;
     if (current === next) return;
     onUpsertValue({
       itemId,
-      columnId: statusColId,
+      columnId: activeStatusColId,
       status_option_id: next,
     });
   }

@@ -217,6 +217,7 @@ function BoardCanvas() {
               onDeleteColumn={(id) =>
                 deleteColumnFn({ data: { id } }).then(invalidate)
               }
+              onOpenItem={setDrawerItemId}
             />
           ))}
 
@@ -239,6 +240,7 @@ function BoardCanvas() {
             columns={columns}
             values={valuesByItem}
             onUpsertValue={(p) => upsertValueFn({ data: p }).then(invalidate)}
+            onOpenItem={setDrawerItemId}
           />
         </div>
       )}
@@ -254,6 +256,7 @@ function BoardCanvas() {
           <WorkloadView items={allItems} columns={columns} values={valuesByItem} />
         </div>
       )}
+      <ItemDrawer itemId={drawerItemId} onClose={() => setDrawerItemId(null)} />
     </div>
   );
 }
@@ -273,6 +276,7 @@ function GroupSection(props: {
   onUpsertValue: (p: any) => Promise<unknown>;
   onAddColumn: (kind: string, title: string) => void;
   onDeleteColumn: (id: string) => void;
+  onOpenItem: (id: string) => void;
 }) {
   const { group, columns, items, values } = props;
   const collapsed = group.collapsed;

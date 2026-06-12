@@ -21,7 +21,7 @@ function Index() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground font-bold">W</div>
-            <span className="font-semibold tracking-tight">WorkOS</span>
+            <span className="font-semibold tracking-tight">WorkPlanOS</span>
           </div>
           <nav className="hidden gap-7 text-sm text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
@@ -88,17 +88,12 @@ function Index() {
         <div className="mx-auto max-w-6xl px-6 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="grid h-5 w-5 place-items-center rounded bg-primary text-primary-foreground font-bold text-[10px]">W</div>
-            <span>© WorkOS</span>
+            <span>© WorkPlanOS</span>
           </div>
           <div className="flex items-center gap-5">
-            <a
-              href="/USER_GUIDE.md"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors"
-            >
+            <Link to="/help" className="hover:text-foreground transition-colors">
               User manual
-            </a>
+            </Link>
             <a
               href="/DEPLOY.md"
               target="_blank"

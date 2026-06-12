@@ -96,7 +96,10 @@ function IntegrationsPage() {
   const ping = useMutation({
     mutationFn: () => pingFn({ data: { workspaceId } }),
     onSuccess: (res: any) => {
-      if (res?.skipped) toast.message("Integration is disabled or not configured");
+      if (res?.skipped) {
+        const miss = res?.missing?.length ? `: missing ${res.missing.join(", ")}` : "";
+        toast.message(`Integration not ready${miss}`);
+      }
       else if (res?.ok) toast.success(`TESS responded ${res.statusCode ?? "OK"}`);
       else toast.error(`TESS returned ${res?.statusCode ?? "error"}: ${res?.error ?? ""}`);
       qc.invalidateQueries({ queryKey: ["integration-dispatches", workspaceId] });

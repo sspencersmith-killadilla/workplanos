@@ -291,7 +291,7 @@ export const updateItem = createServerFn({ method: "POST" })
     const { id, groupId, ...rest } = data;
     const patch: Record<string, unknown> = { ...rest };
     if (groupId !== undefined) patch.group_id = groupId;
-    const { error } = await context.supabase.from("items").update(patch).eq("id", id);
+    const { error } = await context.supabase.from("items").update(patch as any).eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -345,7 +345,7 @@ export const createColumn = createServerFn({ method: "POST" })
         board_id: data.boardId,
         kind: data.kind as any,
         title: data.title,
-        settings,
+        settings: settings as any,
         position: pos,
       })
       .select("id")
@@ -369,7 +369,7 @@ export const updateColumn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { id, ...patch } = data;
-    const { error } = await context.supabase.from("board_columns").update(patch).eq("id", id);
+    const { error } = await context.supabase.from("board_columns").update(patch as any).eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

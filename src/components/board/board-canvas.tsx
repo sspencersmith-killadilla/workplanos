@@ -512,12 +512,21 @@ function GroupSection(props: {
   onAddColumn: (kind: string, title: string) => void;
   onDeleteColumn: (id: string) => void;
   onOpenItem: (id: string) => void;
+  activeDragId: string | null;
 }) {
   const { group, columns, items, values } = props;
   const collapsed = group.collapsed;
 
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `group:${group.id}` });
+
   return (
-    <div className="rounded-lg border border-border/60 overflow-hidden bg-card/30">
+    <div
+      ref={setDropRef}
+      className={cn(
+        "rounded-lg border border-border/60 overflow-hidden bg-card/30 transition-colors",
+        isOver && "ring-2 ring-primary/40",
+      )}
+    >
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border/60">
         <button
           className="text-muted-foreground hover:text-foreground"

@@ -278,6 +278,14 @@ export function BoardCanvas({
           <Zap className="h-3.5 w-3.5" /> Automations
         </Link>
 
+        <Link
+          to="/w/$workspaceId/b/$boardId/customize"
+          params={{ workspaceId, boardId }}
+          className="ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+        >
+          <Settings2 className="h-3.5 w-3.5" /> Customize
+        </Link>
+
         <ShareEmbedButton boardId={boardId} />
       </div>
 

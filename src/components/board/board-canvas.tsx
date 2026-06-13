@@ -171,6 +171,14 @@ export function BoardCanvas({
 
   const invalidate = () => qc.invalidateQueries({ queryKey: key });
 
+  // Optimistic local copy of items so DnD across groups feels instant.
+  const [localItems, setLocalItems] = useState<Item[] | null>(null);
+  useEffect(() => {
+    setLocalItems(null);
+  }, [data?.items]);
+  const effectiveItems: Item[] =
+    localItems ?? (((data?.items ?? []) as Item[]));
+
   const valuesByItem = useMemo(() => {
     const map = new Map<string, Map<string, Val>>();
 
@@ -188,7 +196,7 @@ export function BoardCanvas({
   const itemsByGroup = useMemo(() => {
     const map = new Map<string, Item[]>();
 
-    (data?.items ?? []).forEach((item: any) => {
+    effectiveItems.forEach((item: any) => {
       if (item.parent_item_id) return;
 
       const groupKey = item.group_id ?? "__none";
@@ -200,12 +208,13 @@ export function BoardCanvas({
       map.get(groupKey)!.push(item);
     });
 
+    for (const arr of map.values()) arr.sort((a, b) => a.position - b.position);
     return map;
-  }, [data?.items]);
+  }, [effectiveItems]);
 
   const subItemsByParent = useMemo(() => {
     const map = new Map<string, Item[]>();
-    (data?.items ?? []).forEach((item: any) => {
+    effectiveItems.forEach((item: any) => {
       if (!item.parent_item_id) return;
       const arr = map.get(item.parent_item_id) ?? [];
       arr.push(item);
@@ -213,7 +222,7 @@ export function BoardCanvas({
     });
     for (const arr of map.values()) arr.sort((a, b) => a.position - b.position);
     return map;
-  }, [data?.items]);
+  }, [effectiveItems]);
 
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [drawerItemId, setDrawerItemId] = useState<string | null>(null);
@@ -247,7 +256,7 @@ export function BoardCanvas({
   const columns = (data.columns ?? []) as Col[];
   const groups = (data.groups ?? []) as Group[];
   const views = (data.views ?? []) as { id: string; kind: string; name: string }[];
-  const allItems = ((data.items ?? []) as any[]).filter((item) => !item.parent_item_id) as Item[];
+  const allItems = (effectiveItems as any[]).filter((item) => !item.parent_item_id) as Item[];
   const tableView = views.find((view) => view.kind === "table") ?? views[0];
   const activeView =
     views.find((view) => view.id === activeViewId) ??

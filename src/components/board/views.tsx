@@ -348,6 +348,7 @@ export function CalendarView({
   const linkCol = columns.find((c) => c.kind === "link");
   const doorsCol = columns.find((c) => c.title.toLowerCase() === "doors");
   const showCol = columns.find((c) => c.title.toLowerCase() === "show time");
+  const peopleCol = columns.find((c) => c.kind === "people");
 
   const itemMeta = useMemo(() => {
     const m = new Map<string, ItemMeta>();
@@ -691,6 +692,7 @@ export function CalendarView({
             laneBy={laneBy}
             setLaneBy={setLaneBy}
             venueCol={venueCol}
+            peopleCol={peopleCol}
             onOpenItem={onOpenItem}
             colorOf={colorOf}
             values={values}

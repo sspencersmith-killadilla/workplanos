@@ -506,8 +506,8 @@ function GroupSection(props: {
                 const expanded = props.expandedParents.has(item.id);
                 const completedCount = subs.filter((s) => s.completed_at).length;
                 return (
-                <>
-                <tr key={item.id} className="border-t border-border/40 hover:bg-muted/20 group">
+                <Fragment key={item.id}>
+                <tr className="border-t border-border/40 hover:bg-muted/20 group">
                   <td className="px-3 py-1.5 sticky left-0 bg-background z-10 border-r border-border/40 group-hover:bg-muted/20">
                     <div className="flex items-center gap-2">
                       {subs.length > 0 ? (
@@ -645,7 +645,7 @@ function GroupSection(props: {
                     </td>
                   </tr>
                 )}
-                </>
+                </Fragment>
                 );
               })}
 

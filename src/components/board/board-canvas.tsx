@@ -19,6 +19,8 @@ import {
   Zap,
   Share2,
   Copy,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -33,6 +35,7 @@ import {
   deleteColumn,
   upsertValue,
   updateBoard,
+  setItemCompleted,
 } from "@/lib/boards.functions";
 import { getBoardEmbedToken, setBoardEmbedEnabled } from "@/lib/integrations.functions";
 import { toast } from "sonner";
@@ -72,7 +75,14 @@ type Group = {
   collapsed: boolean;
 };
 
-type Item = { id: string; group_id: string | null; title: string; position: number };
+type Item = {
+  id: string;
+  group_id: string | null;
+  title: string;
+  position: number;
+  parent_item_id?: string | null;
+  completed_at?: string | null;
+};
 
 type Val = {
   item_id: string;

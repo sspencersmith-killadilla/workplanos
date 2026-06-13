@@ -40,11 +40,14 @@ export const Route = createFileRoute("/api/public/integrations/tess/inbound")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+        // TESS may send either WPO's workspace_id (correct) or its own
+        // department/workspace UUID (what its UI shows). Accept both by
+        // also matching against the tess_workspace_id we stored.
         const { data: integ } = await supabaseAdmin
           .from("workspace_integrations")
-          .select("id, workspace_id, target_board_id, shared_secret, enabled")
-          .eq("workspace_id", workspaceId)
+          .select("id, workspace_id, target_board_id, shared_secret, enabled, tess_workspace_id")
           .eq("kind", "tess")
+          .or(`workspace_id.eq.${workspaceId},tess_workspace_id.eq.${workspaceId}`)
           .maybeSingle();
 
         if (!integ || !integ.enabled) return new Response("Not found", { status: 404 });

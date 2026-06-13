@@ -70,6 +70,10 @@ function AutomationsPage() {
       ) as StatusCol[],
     [boardQ.data?.columns],
   );
+  const allCols = useMemo(
+    () => ((boardQ.data?.columns ?? []) as any[]),
+    [boardQ.data?.columns],
+  );
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: rulesKey });
@@ -153,6 +157,7 @@ function AutomationsPage() {
               key={rule.id}
               rule={rule}
               statusCols={statusCols}
+              allCols={allCols}
               onSave={async (patch) => {
                 await updateFn({ data: { id: rule.id, ...patch } });
                 invalidate();

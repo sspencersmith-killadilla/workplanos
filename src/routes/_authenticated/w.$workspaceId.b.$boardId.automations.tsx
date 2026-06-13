@@ -214,6 +214,7 @@ function AutomationsPage() {
 function RuleCard(props: {
   rule: any;
   statusCols: StatusCol[];
+  allCols?: any[];
   onSave: (patch: any) => Promise<void>;
   onDelete: () => void;
 }) {

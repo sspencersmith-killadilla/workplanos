@@ -21,6 +21,7 @@ import {
   Copy,
   CheckCircle2,
   Circle,
+  Settings2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {

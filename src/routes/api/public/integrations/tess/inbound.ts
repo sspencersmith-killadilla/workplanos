@@ -34,6 +34,21 @@ function verifySignature(secret: string, body: string, header: string | null) {
   }
 }
 
+function formatTime(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+const AUTO_RE = /<!-- tess:auto -->[\s\S]*?<!-- \/tess:auto -->/;
+function mergeAutoBlock(prior: string, autoBlock: string): string {
+  if (!prior) return autoBlock;
+  if (AUTO_RE.test(prior)) return prior.replace(AUTO_RE, autoBlock);
+  return `${autoBlock}\n\n${prior}`;
+}
+
 export const Route = createFileRoute("/api/public/integrations/tess/inbound")({
   server: {
     handlers: {

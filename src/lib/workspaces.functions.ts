@@ -51,3 +51,19 @@ export const createWorkspace = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return ws;
   });
+
+export const getMyWorkspaceRole = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { workspaceId: string }) =>
+    z.object({ workspaceId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("workspace_members")
+      .select("role")
+      .eq("workspace_id", data.workspaceId)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { role: (row?.role as string | undefined) ?? null };
+  });

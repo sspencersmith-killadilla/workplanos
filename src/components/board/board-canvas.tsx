@@ -675,11 +675,13 @@ function Cell({
   column,
   value,
   workspaceId,
+  boardId,
   onSave,
 }: {
   column: Col;
   value: Val | null;
   workspaceId: string;
+  boardId: string;
   onSave: (patch: Record<string, any>) => Promise<unknown> | void;
 }) {
   if (column.kind === "status") {

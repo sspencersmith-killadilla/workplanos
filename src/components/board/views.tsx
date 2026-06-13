@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -23,7 +23,15 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  ExternalLink,
+  CalendarDays,
+  LayoutGrid,
+  Rows3,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* ------------ shared types ------------ */

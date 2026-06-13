@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Plus, Trash2, Zap, Bell, CircleDot } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Zap, Bell, CircleDot, Users } from "lucide-react";
 import { getBoard } from "@/lib/boards.functions";
 import {
   listAutomations,

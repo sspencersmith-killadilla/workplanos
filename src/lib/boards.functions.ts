@@ -357,6 +357,27 @@ export const deleteItem = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const setItemCompleted = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; completed: boolean }) =>
+    z.object({ id: z.string().uuid(), completed: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const completed_at = data.completed ? new Date().toISOString() : null;
+    const { error } = await context.supabase
+      .from("items")
+      .update({ completed_at })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    await context.supabase.from("item_activity").insert({
+      item_id: data.id,
+      actor_id: context.userId,
+      kind: data.completed ? "completed" : "reopened",
+      payload: {},
+    });
+    return { ok: true, completed_at };
+  });
+
 /* ====================== COLUMNS ====================== */
 
 export const createColumn = createServerFn({ method: "POST" })

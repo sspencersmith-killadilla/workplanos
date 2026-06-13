@@ -95,6 +95,7 @@ type Val = {
   link_label: string | null;
   status_option_id: string | null;
   people_user_ids: string[] | null;
+  people_external_ids: string[] | null;
 };
 
 export function BoardCanvas({

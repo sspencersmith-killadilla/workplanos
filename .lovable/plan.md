@@ -1,35 +1,35 @@
-## Add board archive & delete UI
+## Workspace Settings page
 
-Backend already has `archiveBoard` and `deleteBoard` server fns plus `boards.archived_at` — this plan wires them into the UI.
+Wire the dead sidebar gear to a real settings page at `/w/:workspaceId/settings`.
 
-### 1. Sidebar (`src/routes/_authenticated/w.$workspaceId.tsx`)
-- Add a `…` dropdown (hover/focus reveal) on each board row with:
-  - **Archive** / **Unarchive**
-  - **Delete…** (owner/admin only, opens confirm dialog)
-- Add a "Show archived" toggle at the bottom of the Boards section. Default hidden. When on, archived boards render below active ones, grayed out, with an Unarchive item in their menu.
-- Filter active vs archived client-side from existing `listBoards` data using `archived_at`.
+### 1. Route — `src/routes/_authenticated/w.$workspaceId.settings.tsx`
+Tabbed layout with:
 
-### 2. Board header (`src/routes/_authenticated/w.$workspaceId.b.$boardId.tsx`)
-- Add a `…` menu in the board header with Archive / Unarchive and Delete.
-- After archive or delete, navigate back to `/w/:workspaceId` and invalidate the `["boards", workspaceId]` query.
+**General**
+- Edit workspace **name** (inline save).
+- Edit **color** (swatch picker, same palette as elsewhere).
+- Read-only **slug** and creation date (slug change is out of scope — it would break invite links and bookmarks).
+- Quick links to **Members** and **Integrations** pages.
 
-### 3. Delete confirmation dialog (type-the-name)
-- Reusable `ConfirmDeleteDialog` (or inline in the board menu) that:
-  - Shows the board name and a warning that items, columns, values, comments, automations, forms, and dashboards on this board will be permanently deleted.
-  - Requires the user to type the exact board name into an input before the Delete button enables.
-  - Destructive button variant; loading state while the mutation runs.
+**Danger zone** (owner only)
+- **Delete workspace** — type-the-name confirm via the existing `ConfirmDeleteDialog`. Permanently deletes the workspace and all boards/items/etc. (cascades through existing FKs).
+- After deletion, navigate to `/app` and invalidate `["workspaces"]`.
 
-### 4. Permissions
-- Archive: any workspace member with edit rights (existing RLS already enforces).
-- Delete: owner/admin only. Hide Delete in the menu when the current user isn't owner/admin, and rely on RLS as the backstop.
-- Reuse the workspace role already available via `workspace_members` (fetch current user's role once per workspace and gate menu items).
+### 2. Sidebar gear (`w.$workspaceId.tsx`)
+- Replace the no-op `<button>` with a `<Link to="/w/$workspaceId/settings">` that shows active state when on the settings page (matches the existing Dashboards/Members/Integrations pattern).
 
-### Technical notes
-- New mutations use `useServerFn(archiveBoard)` and `useServerFn(deleteBoard)`, with `onSuccess` invalidating `["boards", workspaceId]` and (for delete from the open board) navigating away first.
-- No schema changes, no new server fns.
-- Toasts on success/failure via existing `sonner`.
+### 3. Server functions (`src/lib/workspaces.functions.ts`)
+- `updateWorkspace({ id, name?, color? })` — uses `requireSupabaseAuth`; RLS already restricts update to admins/owners.
+- `deleteWorkspace({ id })` — uses `requireSupabaseAuth`; guard inside the handler: only the workspace `owner_id` may delete (extra safety on top of RLS). Relies on existing cascade FKs.
+
+### 4. Permissions in UI
+- Reuse `getMyWorkspaceRole` (already added) to gate which controls are visible:
+  - Name/color edit: owner or admin.
+  - Delete workspace: owner only.
+- Non-privileged members see a read-only General view (name, color swatch, slug) and no Danger zone.
 
 ### Out of scope
-- Bulk archive/delete.
-- A dedicated archived-boards page (the sidebar toggle covers it).
-- Soft-delete / trash with restore (delete is permanent; archive is the reversible option).
+- Renaming the slug.
+- Transferring ownership.
+- Workspace-level notification or branding settings.
+- A separate archive-workspace flow (delete is the single destructive action).

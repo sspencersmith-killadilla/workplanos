@@ -401,6 +401,52 @@ export function BoardCanvas({
         </Link>
 
         <ShareEmbedButton boardId={boardId} />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="ml-2 h-7 w-7 grid place-items-center rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              aria-label="Board actions"
+            >
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem
+              onClick={() => {
+                const isArchived = !!(data?.board as any)?.archived_at;
+                archiveBoardFn({ data: { id: boardId, archived: !isArchived } })
+                  .then(() => {
+                    qc.invalidateQueries({ queryKey: ["boards", workspaceId] });
+                    qc.invalidateQueries({ queryKey: key });
+                    toast.success(isArchived ? "Board restored" : "Board archived");
+                  })
+                  .catch((e: any) => toast.error(e?.message ?? "Action failed"));
+              }}
+            >
+              {(data?.board as any)?.archived_at ? (
+                <>
+                  <ArchiveRestore className="h-3.5 w-3.5 mr-2" /> Unarchive
+                </>
+              ) : (
+                <>
+                  <Archive className="h-3.5 w-3.5 mr-2" /> Archive
+                </>
+              )}
+            </DropdownMenuItem>
+            {canDeleteBoard && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete…
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {activeView.kind === "table" && (

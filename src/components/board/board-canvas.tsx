@@ -359,7 +359,12 @@ export function BoardCanvas({
 
       {activeView.kind === "calendar" && (
         <div className="flex-1 min-h-0">
-          <CalendarView items={allItems} columns={columns} values={valuesByItem} />
+          <CalendarView
+            items={allItems}
+            columns={columns}
+            values={valuesByItem}
+            onOpenItem={setDrawerItemId}
+          />
         </div>
       )}
 

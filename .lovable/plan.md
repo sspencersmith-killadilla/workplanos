@@ -1,100 +1,79 @@
-## Goal
+# Improve TESS → WorkPlanOS sync
 
-Give board owners/admins one place — a new **Customize** tab on each board — to configure KPIs, status options, external (non-member) assignees, and automations that fire on more than just status changes.
+Right now the inbound webhook only fills columns that already exist on the target board, and drops everything else into a "notes" auto-block. We'll make it self-provisioning: it creates the right columns, sorts events into monthly groups, and backfills anything that arrived before today.
 
-## 1. Board Customize page
+## What changes for you
 
-New route: `src/routes/_authenticated/w.$workspaceId.b.$boardId.customize.tsx`, linked from the board header next to **Forms** and **Automations**. Visible only to workspace `owner`/`admin` (other members get a "view only" message). Four sections, each described below.
+1. The TESS inbound feed will auto-create any missing columns on the target board: **Event date, Doors, Show time, Venue, Status, Assignee, Tickets sold, Tickets available, % Sold, TESS Link, Notes**.
+2. Every event will land in a group named after its month (e.g. **June 2026, July 2026**). New months are created on the fly; events that move to a different month are moved to the right group.
+3. Status options on the Status column will be auto-created with colors the first time we see a new status from TESS.
+4. % Sold is computed (sold / available × 100) and stored as a number so it can drive KPIs and dashboard widgets.
+5. A one-time backfill, run when this ships, replays the last known payload for every TESS-linked item into the new columns/groups.
 
-## 2. Status column customization (surfacing what already exists)
+## What stays the same
 
-Status options already live in `board_columns.settings.options`, but they're only editable through ad-hoc drawer UI. The Customize page adds a dedicated editor:
+- The Notes column still keeps its `<!-- tess:auto -->` block so anything you type outside the markers is preserved.
+- Manual columns you've added on the board are untouched.
+- The existing HMAC signature check, dispatch logging, and outbound sync are unchanged.
 
-- List every `kind:'status'` column on the board
-- For each: rename column, add/remove options, edit option label + color (color picker), reorder by drag, set a "default" option
-- Save via existing `updateColumn` server fn (no schema change)
-- Warn before deleting an option that's in use; offer "move existing items to <other option>"
+## Technical details
 
-This is the "custom statuses" capability the user asked for, made discoverable.
+### 1. Schema-aware ingestion (`src/routes/api/public/integrations/tess/inbound.ts`)
 
-## 3. KPI targets per board
+- Replace the "match by title" lookup with an `ensureColumn(boardId, key)` helper that:
+  - Looks up by canonical title (case-insensitive).
+  - If missing, inserts into `board_columns` with the correct `kind` and `settings`, appending to `position`.
+- Canonical column map:
 
-New table `board_kpis`:
+  ```text
+  Event date        date
+  Doors             text   (HH:MM)
+  Show time         text   (HH:MM-HH:MM)
+  Venue             text
+  Status            status (auto-add option on first sight, rotating palette)
+  Assignee          people
+  Tickets sold      number
+  Tickets available number
+  % Sold            number  (computed)
+  TESS Link         link
+  Notes             text   (preserves auto-block)
+  ```
+- For status: if the incoming `ev.status` doesn't match an existing option label, append a new option (id = `crypto.randomUUID()`, color from a fixed 8-color palette keyed by hash of label) into `settings.options`, then set it on the item.
 
-| field | type | notes |
-| --- | --- | --- |
-| id | uuid pk | |
-| board_id | uuid fk → boards | cascade delete |
-| name | text | e.g. "Tickets sold" |
-| metric | text enum | `count_items` \| `sum_column` \| `avg_column` \| `count_with_status` |
-| column_id | uuid nullable | required for sum/avg |
-| status_column_id, status_option_id | uuid nullable | for count_with_status |
-| target | numeric | the goal |
-| unit | text nullable | e.g. "$", "tickets" |
-| period | text enum | `all_time` \| `month` \| `quarter` \| `year` |
-| position | int | |
+### 2. Monthly grouping
 
-RLS: workspace members read; owner/admin write. Standard `GRANT` block.
+- New helper `ensureMonthGroup(boardId, dateIso)`:
+  - Group name = `Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date)`.
+  - If not present, insert into `groups` with a deterministic color (palette indexed by month) and `position = yyyymm`.
+- On `event.created`/`updated`, compute the target group from `ev.starts_at` and `UPDATE items SET group_id = ...` if it differs.
+- Events with no `starts_at` go to a fallback `"Unscheduled"` group.
 
-Customize page section "KPIs": list, add, edit, delete, drag-reorder. Each row shows live actual vs target with a progress bar (computed client-side from already-loaded items, no extra fetches for the basic metrics).
+### 3. Expanded payload schema
 
-These KPIs are then available as a new **KPI card** widget on dashboards (`dashboard_widgets.kind = 'kpi'`, payload `{ board_kpi_id }`). Dashboard widget render is a thin addition to `dashboards.functions.ts` + existing dashboard renderer.
+Extend `payloadSchema.event` to also accept (all optional): `genre`, `promoter`, `support_acts` (string), `settlement_total` (number), `currency`. These won't auto-create columns in v1 — they'll be appended into the Notes auto-block under labeled lines so the data isn't lost. (We can promote any of them to dedicated columns later if you want.)
 
-## 4. External assignees (non-members)
+### 4. Backfill
 
-Problem: today the People column only picks workspace members.
+- New `createServerFn` `backfillTessBoard({ workspaceId })` (owner-gated):
+  - For each `item_external_refs` row with `source='tess'` on this workspace's TESS board, fetch the most recent `integration_dispatches` row with `direction='inbound'` and `payload.event.id = external_id`.
+  - Re-run the same ingestion routine against it (idempotent — uses upsert on `item_values`, won't duplicate groups/columns).
+- Surface a "Backfill from TESS" button in `src/routes/_authenticated/w.$workspaceId.integrations.tsx` next to "Send test ping".
 
-Add table `board_external_assignees`:
+### 5. Tests / verification
 
-| field | type |
-| --- | --- |
-| id | uuid pk |
-| board_id | uuid fk |
-| name | text |
-| email | text nullable |
-| avatar_url | text nullable |
-| created_by | uuid |
+- Hit the published inbound endpoint with `stack_modern--invoke-server-function` using a synthetic payload covering: brand-new event (creates columns, group, status option), updated event (moves month group), event with all tickets fields (verifies % sold).
+- Inspect `board_columns`, `groups`, `item_values` rows for the test event via `supabase--read_query`.
 
-RLS: workspace members read; owner/admin write. Standard GRANT block.
+## Out of scope
 
-Customize page section "External people": CRUD list (name + optional email).
+- New column kinds for genre/promoter/settlement (kept in Notes for now).
+- Two-way sync of the new fields back to TESS (outbound payload shape unchanged).
+- UI for remapping TESS field → column (the canonical map is hard-coded for v1).
 
-People column stores ids in `item_values.value_json` as an array. Extend the encoding to tagged entries: `{ kind: 'member', id }` or `{ kind: 'external', id }`. Migration: server fn that reads existing arrays of bare uuids continues to work (treated as `member`). `PeoplePicker` gets a second list ("External") below members, with an inline "+ Add external person" that opens a small dialog and refreshes. Notification trigger `notify_people_assignment` keeps working — it just skips `external` entries (no `auth.users` row to notify; optionally send to their email later, out of scope).
+## Files touched
 
-TESS outbound payload already sends `assignee_email`; we'll prefer member email, falling back to external email.
+- `src/routes/api/public/integrations/tess/inbound.ts` — schema, ensureColumn, ensureMonthGroup, status-option auto-add, expanded payload.
+- `src/lib/integrations.functions.ts` — add `backfillTessBoard` server fn.
+- `src/routes/_authenticated/w.$workspaceId.integrations.tsx` — add Backfill button.
 
-## 5. Broader automation triggers
-
-Today `automation_rules.trigger` only supports `status_change`. Extend the discriminated union in `src/lib/automations.functions.ts`:
-
-- `status_change` (existing)
-- `item_created`
-- `item_updated` — any column change on the board
-- `column_changed` — specific `column_id` changed (any new value)
-- `comment_added`
-- `activity_added` — any `item_activity` row
-
-Actions stay as they are (`set_status`, `notify`) plus a new `notify_people` action that pings the item's current People column assignees.
-
-Trigger dispatch is server-side: a single `dispatchAutomations` helper in `automations.functions.ts` called by `updateItemValue`, `createItem`, `addComment`, and after `item_activity` inserts. No DB triggers — keeps it inside server functions where we already have auth context.
-
-The Customize page section "Automations" reuses the existing Automations route's editor (just deep-links), so we don't duplicate UI; new trigger kinds appear in its dropdown.
-
-## 6. Permissions
-
-Every new write fn calls `has_ws_role(boardWorkspace, userId, ['owner','admin'])`. Reads scoped via existing `is_member`.
-
-## Acceptance
-
-1. Owner opens board → **Customize** → renames "Confirmed" status to "Locked in", changes its color → board reflects immediately.
-2. Owner adds KPI "Tickets sold, target 500, sum of column Tickets sold" → KPI shows `342 / 500` with progress bar; adding the same KPI to a dashboard as a card renders the same value.
-3. Owner adds external person "Jane Smith — jane@promoter.com" → People picker on any item shows her under "External"; assigning her does not crash notifications.
-4. Owner creates automation: trigger `comment_added`, action `notify_people` → adding a comment notifies all assignees on that item.
-5. Non-admin member opens Customize → sees read-only view, no save buttons.
-
-## Out of scope (call out explicitly so they're not surprised)
-
-- Emailing external assignees (we only store + display them).
-- Custom item types / per-board templates.
-- Branding (logo/colors) per workspace.
-- KPI metrics that need cross-board joins.
+No migration required — uses existing `board_columns`, `groups`, `item_values`, `item_external_refs`, `integration_dispatches` tables.

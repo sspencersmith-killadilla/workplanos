@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ArrowLeft, Copy, RefreshCw, PlugZap } from "lucide-react";
+import { ArrowLeft, Copy, RefreshCw, PlugZap, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import {
   getIntegrationStatus,
   pingTess,
   retryDispatch,
+  backfillTessBoard,
 } from "@/lib/integrations.functions";
 
 export const Route = createFileRoute("/_authenticated/w/$workspaceId/integrations")({
@@ -39,6 +40,7 @@ function IntegrationsPage() {
   const statusFn = useServerFn(getIntegrationStatus);
   const pingFn = useServerFn(pingTess);
   const retryFn = useServerFn(retryDispatch);
+  const backfillFn = useServerFn(backfillTessBoard);
 
   const boardsQ = useQuery({
     queryKey: ["boards", workspaceId],
@@ -108,6 +110,17 @@ function IntegrationsPage() {
     onError: (e: any) => toast.error(e?.message ?? "Ping failed"),
   });
 
+  const backfill = useMutation({
+    mutationFn: () => backfillFn({ data: { workspaceId } }),
+    onSuccess: (res: any) => {
+      toast.success(
+        `Backfill complete — ${res.processed} updated, ${res.skipped} skipped`,
+      );
+      qc.invalidateQueries({ queryKey: ["integration-dispatches", workspaceId] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Backfill failed"),
+  });
+
   const retry = useMutation({
     mutationFn: (dispatchId: string) => retryFn({ data: { dispatchId } }),
     onSuccess: (res: any) => {
@@ -155,6 +168,16 @@ function IntegrationsPage() {
               >
                 <PlugZap className="h-3.5 w-3.5 mr-1.5" />
                 Test connection
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={backfill.isPending || !integQ.data?.enabled || !integQ.data?.target_board_id}
+                onClick={() => backfill.mutate()}
+                title="Replay the last payload for every TESS-linked item into the canonical columns"
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                Backfill from TESS
               </Button>
             </div>
             {statusQ.data && (

@@ -298,132 +298,774 @@ export function CalendarView({
   items,
   columns,
   values,
+  onOpenItem,
 }: {
   items: Item[];
   columns: Col[];
   values: Map<string, Map<string, Val>>;
+  onOpenItem?: (id: string) => void;
 }) {
   const dCols = dateColumns(columns);
-  const [colId, setColId] = useState<string | null>(dCols[0]?.id ?? null);
+
+  // Persist the user's chosen date column per board scope. We don't have boardId here,
+  // so key by the sorted set of date-column ids — stable per board.
+  const storageKey = "calview:" + dCols.map((c) => c.id).sort().join(",");
+  const [colId, setColId] = useStickyState<string | null>(
+    storageKey,
+    pickDefaultDateColumn(dCols)?.id ?? null,
+  );
+
   const [month, setMonth] = useState<Date>(startOfMonth(new Date()));
+  const [selectedDay, setSelectedDay] = useState<Date>(new Date());
+  const [colorMode, setColorMode] = useState<ColorMode>("pctSold");
+  const [layout, setLayout] = useState<CalLayout>("all");
+  const [laneBy, setLaneBy] = useState<"venue" | "assignee">("venue");
 
   if (!colId) {
     return (
-      <EmptyState>Add a Date or Timeline column to use the Calendar view.</EmptyState>
+      <EmptyState>
+        Add a Date or Timeline column to use the Calendar view.
+      </EmptyState>
     );
   }
   const activeColId: string = colId;
+  const activeCol = dCols.find((c) => c.id === activeColId) ?? null;
+
   const monthStart = startOfMonth(month);
   const monthEnd = endOfMonth(month);
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
   const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-  const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
+  const days = useMemo(
+    () => eachDayOfInterval({ start: gridStart, end: gridEnd }),
+    [gridStart.getTime(), gridEnd.getTime()], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
-  const eventsByDay = useMemo(() => {
-    const m = new Map<string, { item: Item; isStart: boolean }[]>();
-    for (const d of days) m.set(format(d, "yyyy-MM-dd"), []);
+  // Resolve a few helper columns for color/agenda rendering.
+  const venueCol = columns.find((c) => c.title.toLowerCase() === "venue");
+  const statusCol = columns.find((c) => c.kind === "status");
+  const soldCol = columns.find((c) => c.title.toLowerCase() === "tickets sold");
+  const capCol = columns.find((c) => c.title.toLowerCase() === "tickets available");
+  const linkCol = columns.find((c) => c.kind === "link");
+  const doorsCol = columns.find((c) => c.title.toLowerCase() === "doors");
+  const showCol = columns.find((c) => c.title.toLowerCase() === "show time");
+
+  const itemMeta = useMemo(() => {
+    const m = new Map<string, ItemMeta>();
     for (const it of items) {
       const v = getVal(values, it.id, activeColId);
-      if (!v?.date_value) continue;
-      const start = new Date(v.date_value);
-      const end = v.date_end_value ? new Date(v.date_end_value) : start;
+      if (!v?.date_value) {
+        m.set(it.id, { start: null, end: null });
+        continue;
+      }
+      const start = parseLooseDate(v.date_value);
+      const end = v.date_end_value ? parseLooseDate(v.date_end_value) : start;
+      m.set(it.id, { start, end });
+    }
+    return m;
+  }, [items, values, activeColId]);
+
+  const eventsByDay = useMemo(() => {
+    const m = new Map<string, Item[]>();
+    for (const d of days) m.set(format(d, "yyyy-MM-dd"), []);
+    for (const it of items) {
+      const meta = itemMeta.get(it.id);
+      if (!meta?.start) continue;
       for (const d of days) {
-        if (isWithinInterval(d, { start, end })) {
-          const k = format(d, "yyyy-MM-dd");
-          m.get(k)!.push({ item: it, isStart: isSameDay(d, start) });
+        if (isWithinInterval(d, { start: meta.start, end: meta.end ?? meta.start })) {
+          m.get(format(d, "yyyy-MM-dd"))!.push(it);
         }
       }
     }
     return m;
-  }, [days, items, values, activeColId]);
+  }, [days, items, itemMeta]);
+
+  // Detect "selected column has no data anywhere on the board" → suggest a switch.
+  const datedItemCount = useMemo(
+    () => items.filter((it) => itemMeta.get(it.id)?.start).length,
+    [items, itemMeta],
+  );
+  const eventDateCol = dCols.find((c) => c.title.toLowerCase() === "event date");
+  const suggestSwitch =
+    datedItemCount === 0 &&
+    eventDateCol &&
+    eventDateCol.id !== activeColId;
+
+  const colorOf = (it: Item): string =>
+    eventColor(colorMode, it, { soldCol, capCol, statusCol, venueCol, values });
+
+  const dayKey = format(selectedDay, "yyyy-MM-dd");
+  const dayEvents = eventsByDay.get(dayKey) ?? [];
+
+  const showMonth = layout === "month" || layout === "agenda" || layout === "all";
+  const showAgenda = layout === "agenda" || layout === "all";
+  const showTimeline = layout === "timeline" || layout === "all";
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-6 py-3 flex items-center gap-3 border-b border-border/60">
-        <button
-          className="h-7 w-7 grid place-items-center rounded hover:bg-muted text-muted-foreground"
-          onClick={() => setMonth(subMonths(month, 1))}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <button
-          className="h-7 w-7 grid place-items-center rounded hover:bg-muted text-muted-foreground"
-          onClick={() => setMonth(addMonths(month, 1))}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-        <button
-          className="text-xs px-2 py-1 rounded hover:bg-muted text-muted-foreground"
-          onClick={() => setMonth(startOfMonth(new Date()))}
-        >
-          Today
-        </button>
+      {/* ----- Header ----- */}
+      <div className="px-6 py-3 flex flex-wrap items-center gap-2 border-b border-border/60">
+        <div className="flex items-center gap-1">
+          <button
+            className="h-7 w-7 grid place-items-center rounded hover:bg-muted text-muted-foreground"
+            onClick={() => setMonth(subMonths(month, 1))}
+            aria-label="Previous month"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            className="h-7 w-7 grid place-items-center rounded hover:bg-muted text-muted-foreground"
+            onClick={() => setMonth(addMonths(month, 1))}
+            aria-label="Next month"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <button
+            className="text-xs px-2 py-1 rounded hover:bg-muted text-muted-foreground"
+            onClick={() => {
+              const now = new Date();
+              setMonth(startOfMonth(now));
+              setSelectedDay(now);
+            }}
+          >
+            Today
+          </button>
+        </div>
         <h2 className="text-lg font-semibold tracking-tight">
           {format(month, "MMMM yyyy")}
         </h2>
-        {dCols.length > 1 && (
+
+        <div className="ml-auto flex items-center gap-2 text-xs">
+          <label className="text-muted-foreground">Color</label>
           <select
-            value={colId}
-            onChange={(e) => setColId(e.target.value)}
-            className="ml-auto bg-muted/50 rounded px-2 py-1 text-xs"
+            value={colorMode}
+            onChange={(e) => setColorMode(e.target.value as ColorMode)}
+            className="bg-muted/50 rounded px-2 py-1"
           >
-            {dCols.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.title}
-              </option>
-            ))}
+            <option value="pctSold">% Sold</option>
+            <option value="status">Status</option>
+            <option value="venue">Venue</option>
           </select>
-        )}
-      </div>
-      <div className="flex-1 overflow-auto p-4">
-        <div className="grid grid-cols-7 text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-            <div key={d} className="px-2 py-1">
-              {d}
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-px bg-border/40 rounded-lg overflow-hidden border border-border/60">
-          {days.map((d) => {
-            const k = format(d, "yyyy-MM-dd");
-            const evs = eventsByDay.get(k) ?? [];
-            const inMonth = isSameMonth(d, month);
-            const today = isSameDay(d, new Date());
-            return (
-              <div
-                key={k}
-                className={cn(
-                  "bg-card min-h-[110px] p-1.5 flex flex-col gap-1",
-                  !inMonth && "bg-card/40 text-muted-foreground",
-                )}
+
+          {dCols.length > 1 && (
+            <>
+              <label className="text-muted-foreground">Column</label>
+              <select
+                value={colId}
+                onChange={(e) => setColId(e.target.value)}
+                className="bg-muted/50 rounded px-2 py-1"
               >
-                <div
-                  className={cn(
-                    "text-xs font-medium px-1",
-                    today &&
-                      "inline-grid place-items-center h-5 w-5 rounded-full bg-primary text-primary-foreground",
-                  )}
-                >
-                  {format(d, "d")}
-                </div>
-                <div className="flex-1 space-y-1 overflow-hidden">
-                  {evs.slice(0, 3).map((e, i) => (
-                    <div
-                      key={i}
-                      className="text-[11px] truncate px-1.5 py-0.5 rounded bg-primary/15 text-primary"
+                {dCols.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+
+          <div className="flex items-center rounded border border-border/60 overflow-hidden">
+            <LayoutTab active={layout === "month"} onClick={() => setLayout("month")} title="Month">
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </LayoutTab>
+            <LayoutTab active={layout === "agenda"} onClick={() => setLayout("agenda")} title="Month + Agenda">
+              <CalendarDays className="h-3.5 w-3.5" />
+            </LayoutTab>
+            <LayoutTab active={layout === "timeline"} onClick={() => setLayout("timeline")} title="Month + Timeline">
+              <Rows3 className="h-3.5 w-3.5" />
+            </LayoutTab>
+            <LayoutTab active={layout === "all"} onClick={() => setLayout("all")} title="All">
+              <span className="text-[10px] px-1.5">All</span>
+            </LayoutTab>
+          </div>
+        </div>
+      </div>
+
+      {suggestSwitch && (
+        <div className="px-6 py-2 text-xs flex items-center gap-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-900 dark:text-amber-200">
+          <span>
+            No dates on <strong>{activeCol?.title}</strong>. Switch to{" "}
+          </span>
+          <button
+            className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 font-medium"
+            onClick={() => setColId(eventDateCol!.id)}
+          >
+            {eventDateCol!.title}
+          </button>
+        </div>
+      )}
+
+      {/* ----- Body ----- */}
+      <div className="flex-1 min-h-0 overflow-auto">
+        <div
+          className={cn(
+            "grid gap-3 p-4",
+            showAgenda ? "grid-cols-[minmax(0,1fr)_320px]" : "grid-cols-1",
+          )}
+        >
+          {/* Month grid */}
+          {showMonth && (
+            <div>
+              <div className="grid grid-cols-7 text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+                  <div key={d} className="px-2 py-1">
+                    {d}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-px bg-border/40 rounded-lg overflow-hidden border border-border/60">
+                {days.map((d) => {
+                  const k = format(d, "yyyy-MM-dd");
+                  const evs = eventsByDay.get(k) ?? [];
+                  const inMonth = isSameMonth(d, month);
+                  const today = isSameDay(d, new Date());
+                  const selected = isSameDay(d, selectedDay);
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setSelectedDay(d)}
+                      className={cn(
+                        "bg-card min-h-[110px] p-1.5 flex flex-col gap-1 text-left transition-colors",
+                        "hover:bg-accent/30 focus:outline-none focus:ring-1 focus:ring-primary/50",
+                        !inMonth && "bg-card/40 text-muted-foreground",
+                        selected && "ring-2 ring-primary/60 ring-inset",
+                      )}
                     >
-                      {e.item.title}
-                    </div>
-                  ))}
-                  {evs.length > 3 && (
-                    <div className="text-[10px] text-muted-foreground px-1.5">
-                      +{evs.length - 3} more
-                    </div>
-                  )}
+                      <div className="flex items-center justify-between">
+                        <div
+                          className={cn(
+                            "text-xs font-medium px-1",
+                            today &&
+                              "inline-grid place-items-center h-5 w-5 rounded-full bg-primary text-primary-foreground",
+                          )}
+                        >
+                          {format(d, "d")}
+                        </div>
+                        {evs.length > 0 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {evs.length}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1 overflow-hidden">
+                        {evs.slice(0, 4).map((it) => (
+                          <EventPill
+                            key={it.id}
+                            item={it}
+                            color={colorOf(it)}
+                            sold={numVal(values, it.id, soldCol?.id)}
+                            cap={numVal(values, it.id, capCol?.id)}
+                            onOpen={() => onOpenItem?.(it.id)}
+                          />
+                        ))}
+                        {evs.length > 4 && (
+                          <div className="text-[10px] text-muted-foreground px-1.5">
+                            +{evs.length - 4} more
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Agenda */}
+          {showAgenda && (
+            <aside className="rounded-lg border border-border/60 bg-card flex flex-col min-h-0">
+              <div className="px-3 py-2 border-b border-border/60">
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  {format(selectedDay, "EEEE")}
+                </div>
+                <div className="text-base font-semibold">
+                  {format(selectedDay, "MMM d, yyyy")}
                 </div>
               </div>
-            );
-          })}
+              <div className="flex-1 overflow-auto p-2 space-y-2">
+                {dayEvents.length === 0 && (
+                  <div className="text-xs text-muted-foreground px-2 py-6 text-center">
+                    No events on this day.
+                  </div>
+                )}
+                {dayEvents.map((it) => {
+                  const sold = numVal(values, it.id, soldCol?.id);
+                  const cap = numVal(values, it.id, capCol?.id);
+                  const pct = pctSold(sold, cap);
+                  const venue = textVal(values, it.id, venueCol?.id);
+                  const doors = textVal(values, it.id, doorsCol?.id);
+                  const show = textVal(values, it.id, showCol?.id);
+                  const statusLabel = statusOptionLabel(
+                    values,
+                    it.id,
+                    statusCol,
+                  );
+                  const statusColor = statusOptionColor(values, it.id, statusCol);
+                  const link = getVal(values, it.id, linkCol?.id ?? "")?.link_url;
+                  return (
+                    <div
+                      key={it.id}
+                      className="rounded-md border border-border/60 bg-background p-2.5 hover:border-primary/40 cursor-pointer"
+                      onClick={() => onOpenItem?.(it.id)}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div
+                          className="mt-1 h-2 w-2 rounded-full shrink-0"
+                          style={{ background: colorOf(it) }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">
+                            {it.title}
+                          </div>
+                          {venue && (
+                            <div className="text-xs text-muted-foreground truncate">
+                              {venue}
+                            </div>
+                          )}
+                          {(doors || show) && (
+                            <div className="text-[11px] text-muted-foreground mt-0.5">
+                              {doors ? `Doors ${doors}` : null}
+                              {doors && show ? " · " : ""}
+                              {show ? `Show ${show}` : null}
+                            </div>
+                          )}
+                          {(sold != null || cap != null) && (
+                            <div className="mt-1.5">
+                              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                <div
+                                  className="h-full"
+                                  style={{
+                                    width: `${Math.min(100, pct ?? 0)}%`,
+                                    background: heatmapColor(pct),
+                                  }}
+                                />
+                              </div>
+                              <div className="text-[10px] text-muted-foreground mt-0.5">
+                                {sold ?? 0}
+                                {cap != null ? ` / ${cap}` : ""}
+                                {pct != null ? ` · ${pct}%` : ""}
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 mt-1.5">
+                            {statusLabel && (
+                              <span
+                                className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                                style={{
+                                  background: (statusColor ?? "#64748b") + "33",
+                                  color: statusColor ?? undefined,
+                                }}
+                              >
+                                {statusLabel}
+                              </span>
+                            )}
+                            {link && (
+                              <a
+                                href={link}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-[10px] text-primary inline-flex items-center gap-0.5 hover:underline"
+                              >
+                                Open <ExternalLink className="h-2.5 w-2.5" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </aside>
+          )}
+        </div>
+
+        {/* Timeline strip */}
+        {showTimeline && (
+          <TimelineStrip
+            items={items}
+            itemMeta={itemMeta}
+            monthStart={monthStart}
+            monthEnd={monthEnd}
+            laneBy={laneBy}
+            setLaneBy={setLaneBy}
+            venueCol={venueCol}
+            onOpenItem={onOpenItem}
+            colorOf={colorOf}
+            values={values}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---- Calendar helpers & subcomponents ---- */
+
+type ColorMode = "pctSold" | "status" | "venue";
+type CalLayout = "month" | "agenda" | "timeline" | "all";
+type ItemMeta = { start: Date | null; end: Date | null };
+
+function useStickyState<T>(key: string, initial: T): [T, (v: T) => void] {
+  const [v, setV] = useState<T>(() => {
+    if (typeof window === "undefined") return initial;
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw == null) return initial;
+      return JSON.parse(raw) as T;
+    } catch {
+      return initial;
+    }
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(key, JSON.stringify(v));
+    } catch {
+      /* ignore */
+    }
+  }, [key, v]);
+  return [v, setV];
+}
+
+function pickDefaultDateColumn(dCols: Col[]): Col | undefined {
+  if (dCols.length === 0) return undefined;
+  const event = dCols.find((c) => c.title.toLowerCase() === "event date");
+  if (event) return event;
+  const generic = dCols.find((c) => c.title.toLowerCase().includes("date"));
+  if (generic) return generic;
+  return dCols[0];
+}
+
+// Parse "2026-06-18T21:00:00" (naive) safely so it lands on June 18 regardless of locale.
+function parseLooseDate(s: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+  const naive = /^(\d{4})-(\d{2})-(\d{2})[Tt ](\d{2}):(\d{2})(?::(\d{2}))?$/.exec(s);
+  if (naive) {
+    const [, y, mo, d, h, mi, se] = naive;
+    return new Date(+y, +mo - 1, +d, +h, +mi, se ? +se : 0);
+  }
+  return new Date(s);
+}
+
+function numVal(
+  values: Map<string, Map<string, Val>>,
+  itemId: string,
+  columnId?: string,
+): number | null {
+  if (!columnId) return null;
+  const v = getVal(values, itemId, columnId);
+  return v?.number_value ?? null;
+}
+function textVal(
+  values: Map<string, Map<string, Val>>,
+  itemId: string,
+  columnId?: string,
+): string | null {
+  if (!columnId) return null;
+  const v = getVal(values, itemId, columnId);
+  return v?.text_value ?? null;
+}
+function pctSold(sold: number | null, cap: number | null): number | null {
+  if (sold == null || cap == null || cap <= 0) return null;
+  return Math.round((sold / cap) * 1000) / 10;
+}
+function heatmapColor(pct: number | null): string {
+  if (pct == null) return "#94a3b8"; // gray
+  if (pct >= 80) return "#22c55e";
+  if (pct >= 40) return "#f59e0b";
+  return "#ef4444";
+}
+function statusOptionLabel(
+  values: Map<string, Map<string, Val>>,
+  itemId: string,
+  col: Col | undefined,
+): string | null {
+  if (!col) return null;
+  const id = getVal(values, itemId, col.id)?.status_option_id;
+  if (!id) return null;
+  const opt = (col.settings?.options as StatusOpt[] | undefined)?.find(
+    (o) => o.id === id,
+  );
+  return opt?.label ?? null;
+}
+function statusOptionColor(
+  values: Map<string, Map<string, Val>>,
+  itemId: string,
+  col: Col | undefined,
+): string | null {
+  if (!col) return null;
+  const id = getVal(values, itemId, col.id)?.status_option_id;
+  if (!id) return null;
+  const opt = (col.settings?.options as StatusOpt[] | undefined)?.find(
+    (o) => o.id === id,
+  );
+  return opt?.color ?? null;
+}
+function hashColor(s: string): string {
+  const palette = [
+    "#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444",
+    "#a855f7", "#ec4899", "#14b8a6", "#8b5cf6", "#f97316",
+  ];
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return palette[Math.abs(h) % palette.length];
+}
+function eventColor(
+  mode: ColorMode,
+  it: Item,
+  ctx: {
+    soldCol?: Col;
+    capCol?: Col;
+    statusCol?: Col;
+    venueCol?: Col;
+    values: Map<string, Map<string, Val>>;
+  },
+): string {
+  if (mode === "status") {
+    return statusOptionColor(ctx.values, it.id, ctx.statusCol) ?? "#64748b";
+  }
+  if (mode === "venue") {
+    const v = textVal(ctx.values, it.id, ctx.venueCol?.id) ?? it.id;
+    return hashColor(v);
+  }
+  // pctSold (default)
+  const sold = numVal(ctx.values, it.id, ctx.soldCol?.id);
+  const cap = numVal(ctx.values, it.id, ctx.capCol?.id);
+  return heatmapColor(pctSold(sold, cap));
+}
+
+function LayoutTab({
+  active,
+  onClick,
+  title,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={cn(
+        "h-7 px-2 grid place-items-center text-muted-foreground hover:bg-muted",
+        active && "bg-primary/10 text-primary",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EventPill({
+  item,
+  color,
+  sold,
+  cap,
+  onOpen,
+}: {
+  item: Item;
+  color: string;
+  sold: number | null;
+  cap: number | null;
+  onOpen: () => void;
+}) {
+  const pct = pctSold(sold, cap);
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onOpen();
+      }}
+      title={
+        `${item.title}` +
+        (pct != null ? ` — ${pct}% sold` : "") +
+        (cap != null ? ` (${sold ?? 0}/${cap})` : "")
+      }
+      className="group rounded px-1.5 py-0.5 text-[11px] truncate cursor-pointer hover:brightness-110"
+      style={{
+        background: color + "26",
+        color: undefined,
+        borderLeft: `3px solid ${color}`,
+      }}
+    >
+      <div className="truncate">{item.title}</div>
+      {pct != null && (
+        <div className="h-0.5 rounded-full mt-0.5 bg-muted overflow-hidden">
+          <div
+            className="h-full"
+            style={{ width: `${Math.min(100, pct)}%`, background: color }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TimelineStrip({
+  items,
+  itemMeta,
+  monthStart,
+  monthEnd,
+  laneBy,
+  setLaneBy,
+  venueCol,
+  onOpenItem,
+  colorOf,
+  values,
+}: {
+  items: Item[];
+  itemMeta: Map<string, ItemMeta>;
+  monthStart: Date;
+  monthEnd: Date;
+  laneBy: "venue" | "assignee";
+  setLaneBy: (v: "venue" | "assignee") => void;
+  venueCol: Col | undefined;
+  onOpenItem?: (id: string) => void;
+  colorOf: (it: Item) => string;
+  values: Map<string, Map<string, Val>>;
+}) {
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const dayW = 28; // px per day
+
+  // Build lanes
+  const laneMap = new Map<string, Item[]>();
+  for (const it of items) {
+    const meta = itemMeta.get(it.id);
+    if (!meta?.start) continue;
+    if (meta.end! < monthStart || meta.start > monthEnd) continue;
+    let laneKey = "—";
+    if (laneBy === "venue") {
+      laneKey = textVal(values, it.id, venueCol?.id) ?? "No venue";
+    } else {
+      const ppl = getVal(values, it.id, "")?.people_user_ids;
+      laneKey = ppl && ppl.length ? ppl[0] : "Unassigned";
+    }
+    if (!laneMap.has(laneKey)) laneMap.set(laneKey, []);
+    laneMap.get(laneKey)!.push(it);
+  }
+  const lanes = Array.from(laneMap.entries()).sort((a, b) =>
+    a[0].localeCompare(b[0]),
+  );
+
+  const dayIndex = (d: Date) => {
+    const ms = d.getTime() - monthStart.getTime();
+    return Math.max(0, Math.floor(ms / 86400000));
+  };
+
+  return (
+    <div className="border-t border-border/60 bg-card">
+      <div className="px-4 py-2 flex items-center gap-2 text-xs">
+        <span className="font-medium">Timeline</span>
+        <span className="text-muted-foreground">·</span>
+        <span className="text-muted-foreground">Group by</span>
+        <select
+          value={laneBy}
+          onChange={(e) => setLaneBy(e.target.value as "venue" | "assignee")}
+          className="bg-muted/50 rounded px-2 py-0.5"
+        >
+          <option value="venue">Venue</option>
+          <option value="assignee">Assignee</option>
+        </select>
+      </div>
+      <div className="overflow-auto">
+        <div style={{ minWidth: `${180 + daysInMonth.length * dayW}px` }}>
+          {/* Day header */}
+          <div className="flex border-b border-border/60 sticky top-0 bg-card z-10">
+            <div className="w-[180px] shrink-0 px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground border-r border-border/60">
+              {laneBy === "venue" ? "Venue" : "Assignee"}
+            </div>
+            <div className="flex">
+              {daysInMonth.map((d) => {
+                const today = isSameDay(d, new Date());
+                return (
+                  <div
+                    key={d.toISOString()}
+                    style={{ width: dayW }}
+                    className={cn(
+                      "text-[10px] text-center py-1.5 text-muted-foreground border-r border-border/30",
+                      today && "text-primary font-semibold",
+                    )}
+                  >
+                    {format(d, "d")}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {/* Lanes */}
+          {lanes.length === 0 && (
+            <div className="px-4 py-6 text-xs text-muted-foreground">
+              No events in this month.
+            </div>
+          )}
+          {lanes.map(([laneKey, laneItems]) => (
+            <div key={laneKey} className="flex border-b border-border/40">
+              <div className="w-[180px] shrink-0 px-3 py-2 text-xs font-medium truncate border-r border-border/60 bg-card sticky left-0">
+                {laneKey}
+              </div>
+              <div
+                className="relative"
+                style={{
+                  width: daysInMonth.length * dayW,
+                  minHeight: 32 + laneItems.length * 4,
+                }}
+              >
+                {/* Today line */}
+                {(() => {
+                  const today = new Date();
+                  if (today < monthStart || today > monthEnd) return null;
+                  return (
+                    <div
+                      className="absolute top-0 bottom-0 w-px bg-primary/40 pointer-events-none"
+                      style={{ left: (dayIndex(today) + 0.5) * dayW }}
+                    />
+                  );
+                })()}
+                {laneItems.map((it, i) => {
+                  const meta = itemMeta.get(it.id)!;
+                  const s = meta.start! < monthStart ? monthStart : meta.start!;
+                  const e =
+                    (meta.end ?? meta.start!) > monthEnd
+                      ? monthEnd
+                      : meta.end ?? meta.start!;
+                  const left = dayIndex(s) * dayW;
+                  const span = Math.max(1, dayIndex(e) - dayIndex(s) + 1);
+                  const color = colorOf(it);
+                  return (
+                    <button
+                      key={it.id}
+                      onClick={() => onOpenItem?.(it.id)}
+                      title={it.title}
+                      className="absolute text-[10px] truncate rounded px-1.5 py-0.5 text-left hover:brightness-110"
+                      style={{
+                        left: left + 2,
+                        width: span * dayW - 4,
+                        top: 4 + i * 22,
+                        background: color + "33",
+                        borderLeft: `3px solid ${color}`,
+                      }}
+                    >
+                      {it.title}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

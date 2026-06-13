@@ -22,6 +22,7 @@ import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticate
 import { Route as EmbedBBoardIdRouteImport } from './routes/embed.b.$boardId'
 import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authenticated/w.$workspaceId'
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
+import { Route as AuthenticatedWWorkspaceIdSettingsRouteImport } from './routes/_authenticated/w.$workspaceId.settings'
 import { Route as AuthenticatedWWorkspaceIdMembersRouteImport } from './routes/_authenticated/w.$workspaceId.members'
 import { Route as AuthenticatedWWorkspaceIdIntegrationsRouteImport } from './routes/_authenticated/w.$workspaceId.integrations'
 import { Route as AuthenticatedWWorkspaceIdDashboardsRouteImport } from './routes/_authenticated/w.$workspaceId.dashboards'
@@ -98,6 +99,12 @@ const AuthenticatedWWorkspaceIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
   } as any)
+const AuthenticatedWWorkspaceIdSettingsRoute =
+  AuthenticatedWWorkspaceIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
+  } as any)
 const AuthenticatedWWorkspaceIdMembersRoute =
   AuthenticatedWWorkspaceIdMembersRouteImport.update({
     id: '/members',
@@ -168,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
   '/w/$workspaceId/integrations': typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
+  '/w/$workspaceId/settings': typeof AuthenticatedWWorkspaceIdSettingsRoute
   '/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
   '/api/public/integrations/tess/inbound': typeof ApiPublicIntegrationsTessInboundRoute
@@ -190,6 +198,7 @@ export interface FileRoutesByTo {
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
   '/w/$workspaceId/integrations': typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   '/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
+  '/w/$workspaceId/settings': typeof AuthenticatedWWorkspaceIdSettingsRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/api/public/integrations/tess/inbound': typeof ApiPublicIntegrationsTessInboundRoute
   '/w/$workspaceId/b/$boardId/automations': typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute
@@ -214,6 +223,7 @@ export interface FileRoutesById {
   '/_authenticated/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
   '/_authenticated/w/$workspaceId/integrations': typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   '/_authenticated/w/$workspaceId/members': typeof AuthenticatedWWorkspaceIdMembersRoute
+  '/_authenticated/w/$workspaceId/settings': typeof AuthenticatedWWorkspaceIdSettingsRoute
   '/_authenticated/w/$workspaceId/': typeof AuthenticatedWWorkspaceIdIndexRoute
   '/_authenticated/w/$workspaceId/b/$boardId': typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
   '/api/public/integrations/tess/inbound': typeof ApiPublicIntegrationsTessInboundRoute
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/w/$workspaceId/dashboards'
     | '/w/$workspaceId/integrations'
     | '/w/$workspaceId/members'
+    | '/w/$workspaceId/settings'
     | '/w/$workspaceId/'
     | '/w/$workspaceId/b/$boardId'
     | '/api/public/integrations/tess/inbound'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/w/$workspaceId/dashboards'
     | '/w/$workspaceId/integrations'
     | '/w/$workspaceId/members'
+    | '/w/$workspaceId/settings'
     | '/w/$workspaceId'
     | '/api/public/integrations/tess/inbound'
     | '/w/$workspaceId/b/$boardId/automations'
@@ -284,6 +296,7 @@ export interface FileRouteTypes {
     | '/_authenticated/w/$workspaceId/dashboards'
     | '/_authenticated/w/$workspaceId/integrations'
     | '/_authenticated/w/$workspaceId/members'
+    | '/_authenticated/w/$workspaceId/settings'
     | '/_authenticated/w/$workspaceId/'
     | '/_authenticated/w/$workspaceId/b/$boardId'
     | '/api/public/integrations/tess/inbound'
@@ -397,6 +410,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdIndexRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdRoute
     }
+    '/_authenticated/w/$workspaceId/settings': {
+      id: '/_authenticated/w/$workspaceId/settings'
+      path: '/settings'
+      fullPath: '/w/$workspaceId/settings'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdSettingsRouteImport
+      parentRoute: typeof AuthenticatedWWorkspaceIdRoute
+    }
     '/_authenticated/w/$workspaceId/members': {
       id: '/_authenticated/w/$workspaceId/members'
       path: '/members'
@@ -491,6 +511,7 @@ interface AuthenticatedWWorkspaceIdRouteChildren {
   AuthenticatedWWorkspaceIdDashboardsRoute: typeof AuthenticatedWWorkspaceIdDashboardsRoute
   AuthenticatedWWorkspaceIdIntegrationsRoute: typeof AuthenticatedWWorkspaceIdIntegrationsRoute
   AuthenticatedWWorkspaceIdMembersRoute: typeof AuthenticatedWWorkspaceIdMembersRoute
+  AuthenticatedWWorkspaceIdSettingsRoute: typeof AuthenticatedWWorkspaceIdSettingsRoute
   AuthenticatedWWorkspaceIdIndexRoute: typeof AuthenticatedWWorkspaceIdIndexRoute
   AuthenticatedWWorkspaceIdBBoardIdRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren
 }
@@ -503,6 +524,8 @@ const AuthenticatedWWorkspaceIdRouteChildren: AuthenticatedWWorkspaceIdRouteChil
       AuthenticatedWWorkspaceIdIntegrationsRoute,
     AuthenticatedWWorkspaceIdMembersRoute:
       AuthenticatedWWorkspaceIdMembersRoute,
+    AuthenticatedWWorkspaceIdSettingsRoute:
+      AuthenticatedWWorkspaceIdSettingsRoute,
     AuthenticatedWWorkspaceIdIndexRoute: AuthenticatedWWorkspaceIdIndexRoute,
     AuthenticatedWWorkspaceIdBBoardIdRoute:
       AuthenticatedWWorkspaceIdBBoardIdRouteWithChildren,

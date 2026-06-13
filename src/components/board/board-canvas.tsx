@@ -639,83 +639,33 @@ function GroupSection(props: {
               </tr>
             </thead>
             <tbody>
+              <SortableContext
+                items={items.map((i) => i.id)}
+                strategy={verticalListSortingStrategy}
+              >
               {items.map((item) => {
                 const subs = props.subItemsByParent.get(item.id) ?? [];
                 const expanded = props.expandedParents.has(item.id);
                 const completedCount = subs.filter((s) => s.completed_at).length;
                 return (
                 <Fragment key={item.id}>
-                <tr className="border-t border-border/40 hover:bg-muted/20 group">
-                  <td className="px-3 py-1.5 sticky left-0 bg-background z-10 border-r border-border/40 group-hover:bg-muted/20">
-                    <div className="flex items-center gap-2">
-                      {subs.length > 0 ? (
-                        <button
-                          onClick={() => props.onToggleExpanded(item.id)}
-                          className="h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
-                          aria-label={expanded ? "Collapse sub-items" : "Expand sub-items"}
-                        >
-                          {expanded ? (
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          ) : (
-                            <ChevronRight className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                      ) : (
-                        <span className="w-5 shrink-0" />
-                      )}
-                      <button
-                        onClick={() => props.onOpenItem(item.id)}
-                        className="opacity-0 group-hover:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
-                        aria-label="Open item"
-                      >
-                        <Expand className="h-3 w-3" />
-                      </button>
-                      <InlineEdit
-                        value={item.title}
-                        onSave={(title) => props.onUpdateItem(item.id, title)}
-                        className="flex-1 text-sm"
-                      />
-                      {subs.length > 0 && (
-                        <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
-                          {completedCount}/{subs.length}
-                        </span>
-                      )}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="opacity-0 group-hover:opacity-100 h-6 w-6 grid place-items-center rounded hover:bg-muted text-muted-foreground">
-                            <MoreHorizontal className="h-3.5 w-3.5" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => props.onAddSubItem(item.id)}>
-                            <Plus className="h-3.5 w-3.5 mr-2" /> Add sub-item
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => props.onDeleteItem(item.id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete item
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </td>
-
-                  {columns.map((column) => (
-                    <td key={column.id} className="px-2 py-1 border-r border-border/40 align-middle">
-                      <Cell
-                        column={column}
-                        value={values.get(item.id)?.get(column.id) ?? null}
-                        workspaceId={props.workspaceId}
-                        boardId={props.boardId}
-                        onSave={(patch) => props.onUpsertValue({ itemId: item.id, columnId: column.id, ...patch })}
-                      />
-                    </td>
-                  ))}
-
-                  <td />
-                </tr>
+                <SortableItemRow
+                  item={item}
+                  columns={columns}
+                  values={values}
+                  workspaceId={props.workspaceId}
+                  boardId={props.boardId}
+                  subs={subs}
+                  expanded={expanded}
+                  completedCount={completedCount}
+                  isDragging={props.activeDragId === item.id}
+                  onToggleExpanded={props.onToggleExpanded}
+                  onOpenItem={props.onOpenItem}
+                  onUpdateItem={props.onUpdateItem}
+                  onDeleteItem={props.onDeleteItem}
+                  onAddSubItem={props.onAddSubItem}
+                  onUpsertValue={props.onUpsertValue}
+                />
                 {expanded &&
                   subs.map((sub) => (
                     <tr
@@ -787,6 +737,7 @@ function GroupSection(props: {
                 </Fragment>
                 );
               })}
+              </SortableContext>
 
               <tr>
                 <td colSpan={columns.length + 2} className="px-3 py-2 border-t border-border/40">

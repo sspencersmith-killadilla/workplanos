@@ -925,6 +925,7 @@ function TimelineStrip({
   laneBy,
   setLaneBy,
   venueCol,
+  peopleCol,
   onOpenItem,
   colorOf,
   values,
@@ -936,6 +937,7 @@ function TimelineStrip({
   laneBy: "venue" | "assignee";
   setLaneBy: (v: "venue" | "assignee") => void;
   venueCol: Col | undefined;
+  peopleCol: Col | undefined;
   onOpenItem?: (id: string) => void;
   colorOf: (it: Item) => string;
   values: Map<string, Map<string, Val>>;
@@ -953,7 +955,9 @@ function TimelineStrip({
     if (laneBy === "venue") {
       laneKey = textVal(values, it.id, venueCol?.id) ?? "No venue";
     } else {
-      const ppl = getVal(values, it.id, "")?.people_user_ids;
+      const ppl = peopleCol
+        ? getVal(values, it.id, peopleCol.id)?.people_user_ids
+        : null;
       laneKey = ppl && ppl.length ? ppl[0] : "Unassigned";
     }
     if (!laneMap.has(laneKey)) laneMap.set(laneKey, []);

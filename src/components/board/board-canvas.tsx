@@ -763,8 +763,11 @@ function Cell({
     return (
       <PeoplePicker
         workspaceId={workspaceId}
+        boardId={boardId}
         value={value?.people_user_ids ?? []}
+        externalValue={value?.people_external_ids ?? []}
         onChange={(people_user_ids) => onSave({ people_user_ids })}
+        onChangeExternal={(people_external_ids) => onSave({ people_external_ids })}
       />
     );
   }

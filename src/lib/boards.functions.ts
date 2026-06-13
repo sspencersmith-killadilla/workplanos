@@ -271,6 +271,15 @@ export const createItem = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    try {
+      const { dispatchAutomations } = await import("./automations-dispatch.server");
+      await dispatchAutomations(context.supabase, {
+        boardId: data.boardId,
+        itemId: item.id,
+        actorId: context.userId,
+        trigger: { kind: "item_created" },
+      });
+    } catch {}
     return { id: item.id };
   });
 

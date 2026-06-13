@@ -344,13 +344,9 @@ function RuleCard(props: {
                 >
                   <SelectTrigger className="w-56 h-8"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {((props as any).allColumns ?? []).length > 0
-                      ? (props as any).allColumns.map((c: any) => (
-                          <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
-                        ))
-                      : statusCols.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
-                        ))}
+                    {(props.allCols ?? statusCols).map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </>

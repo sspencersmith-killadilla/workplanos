@@ -13,7 +13,7 @@ export const listKpis = createServerFn({ method: "GET" })
     z.object({ boardId: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
+    const { data: rows, error } = await (context.supabase as any)
       .from("board_kpis")
       .select(
         "id, board_id, name, metric, column_id, status_column_id, status_option_id, target, unit, period, position",
@@ -32,7 +32,7 @@ export const createKpi = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { data: maxRow } = await context.supabase
+    const { data: maxRow } = await (context.supabase as any)
       .from("board_kpis")
       .select("position")
       .eq("board_id", data.boardId)
@@ -40,7 +40,7 @@ export const createKpi = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
     const pos = (maxRow?.position ?? 0) + 1024;
-    const { data: row, error } = await context.supabase
+    const { data: row, error } = await (context.supabase as any)
       .from("board_kpis")
       .insert({
         board_id: data.boardId,
@@ -89,7 +89,7 @@ export const updateKpi = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { id, ...patch } = data;
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("board_kpis")
       .update(patch as any)
       .eq("id", id);
@@ -101,7 +101,7 @@ export const deleteKpi = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("board_kpis")
       .delete()
       .eq("id", data.id);
@@ -117,7 +117,7 @@ export const listExternals = createServerFn({ method: "GET" })
     z.object({ boardId: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
+    const { data: rows, error } = await (context.supabase as any)
       .from("board_external_assignees")
       .select("id, board_id, name, email, avatar_url")
       .eq("board_id", data.boardId)
@@ -138,7 +138,7 @@ export const createExternal = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { data: row, error } = await context.supabase
+    const { data: row, error } = await (context.supabase as any)
       .from("board_external_assignees")
       .insert({
         board_id: data.boardId,
@@ -166,7 +166,7 @@ export const updateExternal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { id, ...patch } = data;
     if ((patch as any).email === "") (patch as any).email = null;
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("board_external_assignees")
       .update(patch as any)
       .eq("id", id);
@@ -178,7 +178,7 @@ export const deleteExternal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("board_external_assignees")
       .delete()
       .eq("id", data.id);

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Fragment, type CSSProperties, useEffect, useMemo, useState } from "react";
 import {
@@ -23,6 +23,8 @@ import {
   Circle,
   Settings2,
   GripVertical,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import {
   DndContext,
@@ -56,8 +58,12 @@ import {
   deleteColumn,
   upsertValue,
   updateBoard,
+  deleteBoard,
   setItemCompleted,
 } from "@/lib/boards.functions";
+import { archiveBoard } from "@/lib/lifecycle.functions";
+import { getMyWorkspaceRole } from "@/lib/workspaces.functions";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { getBoardEmbedToken, setBoardEmbedEnabled } from "@/lib/integrations.functions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -140,6 +146,18 @@ export function BoardCanvas({
   const upsertValueFn = useServerFn(upsertValue);
   const updateBoardFn = useServerFn(updateBoard);
   const setItemCompletedFn = useServerFn(setItemCompleted);
+  const archiveBoardFn = useServerFn(archiveBoard);
+  const deleteBoardFn = useServerFn(deleteBoard);
+  const getRoleFn = useServerFn(getMyWorkspaceRole);
+  const navigate = useNavigate();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletingBoard, setDeletingBoard] = useState(false);
+
+  const { data: roleData } = useQuery({
+    queryKey: ["myWorkspaceRole", workspaceId],
+    queryFn: () => getRoleFn({ data: { workspaceId } }),
+  });
+  const canDeleteBoard = roleData?.role === "owner" || roleData?.role === "admin";
 
   const key = ["board", boardId] as const;
   const { data, isLoading } = useQuery({
@@ -383,6 +401,52 @@ export function BoardCanvas({
         </Link>
 
         <ShareEmbedButton boardId={boardId} />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="ml-2 h-7 w-7 grid place-items-center rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              aria-label="Board actions"
+            >
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem
+              onClick={() => {
+                const isArchived = !!(data?.board as any)?.archived_at;
+                archiveBoardFn({ data: { id: boardId, archived: !isArchived } })
+                  .then(() => {
+                    qc.invalidateQueries({ queryKey: ["boards", workspaceId] });
+                    qc.invalidateQueries({ queryKey: key });
+                    toast.success(isArchived ? "Board restored" : "Board archived");
+                  })
+                  .catch((e: any) => toast.error(e?.message ?? "Action failed"));
+              }}
+            >
+              {(data?.board as any)?.archived_at ? (
+                <>
+                  <ArchiveRestore className="h-3.5 w-3.5 mr-2" /> Unarchive
+                </>
+              ) : (
+                <>
+                  <Archive className="h-3.5 w-3.5 mr-2" /> Archive
+                </>
+              )}
+            </DropdownMenuItem>
+            {canDeleteBoard && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete…
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {activeView.kind === "table" && (
@@ -487,6 +551,36 @@ export function BoardCanvas({
       )}
 
       <ItemDrawer itemId={drawerItemId} onClose={() => setDrawerItemId(null)} />
+
+      <ConfirmDeleteDialog
+        open={confirmDelete}
+        onOpenChange={(o) => !o && setConfirmDelete(false)}
+        title="Delete board?"
+        description={
+          <>
+            <p>
+              This permanently deletes <strong className="text-foreground">{data.board.name}</strong>{" "}
+              and all of its items, columns, values, comments, automations, forms, and dashboards.
+            </p>
+            <p>This action cannot be undone.</p>
+          </>
+        }
+        confirmText={data.board.name}
+        confirmLabel="Delete board"
+        loading={deletingBoard}
+        onConfirm={() => {
+          setDeletingBoard(true);
+          deleteBoardFn({ data: { id: boardId } })
+            .then(() => {
+              qc.invalidateQueries({ queryKey: ["boards", workspaceId] });
+              toast.success("Board deleted");
+              setConfirmDelete(false);
+              navigate({ to: "/w/$workspaceId", params: { workspaceId } });
+            })
+            .catch((e: any) => toast.error(e?.message ?? "Could not delete board"))
+            .finally(() => setDeletingBoard(false));
+        }}
+      />
     </div>
   );
 }

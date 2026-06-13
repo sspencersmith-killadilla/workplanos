@@ -1,14 +1,24 @@
 import { createFileRoute, Link, Outlet, useNavigate, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users, User, Menu, Shield, Plug } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ChevronLeft, LogOut, Plus, LayoutGrid, Settings, LayoutDashboard, BookOpen, Users, User, Menu, Shield, Plug, MoreHorizontal, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { InboxBell } from "@/components/InboxBell";
 import { SearchPalette } from "@/components/SearchPalette";
 import { supabase } from "@/integrations/supabase/client";
-import { getWorkspace } from "@/lib/workspaces.functions";
-import { listBoards, createBoard } from "@/lib/boards.functions";
+import { getWorkspace, getMyWorkspaceRole } from "@/lib/workspaces.functions";
+import { listBoards, createBoard, deleteBoard } from "@/lib/boards.functions";
+import { archiveBoard } from "@/lib/lifecycle.functions";
 import { isSuperAdmin } from "@/lib/admin.functions";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,6 +45,9 @@ function WorkspaceShell() {
   const listBoardsFn = useServerFn(listBoards);
   const createBoardFn = useServerFn(createBoard);
   const isSuperAdminFn = useServerFn(isSuperAdmin);
+  const archiveBoardFn = useServerFn(archiveBoard);
+  const deleteBoardFn = useServerFn(deleteBoard);
+  const getRoleFn = useServerFn(getMyWorkspaceRole);
 
   const { data: ws } = useQuery({
     queryKey: ["workspace", workspaceId],
@@ -48,9 +61,16 @@ function WorkspaceShell() {
     queryKey: ["isSuperAdmin"],
     queryFn: () => isSuperAdminFn(),
   });
+  const { data: roleData } = useQuery({
+    queryKey: ["myWorkspaceRole", workspaceId],
+    queryFn: () => getRoleFn({ data: { workspaceId } }),
+  });
+  const canDeleteBoard = roleData?.role === "owner" || roleData?.role === "admin";
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const create = useMutation({
     mutationFn: (n: string) => createBoardFn({ data: { workspaceId, name: n } }),
@@ -61,6 +81,29 @@ function WorkspaceShell() {
       navigate({ to: "/w/$workspaceId/b/$boardId", params: { workspaceId, boardId: id } });
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not create board"),
+  });
+
+  const archive = useMutation({
+    mutationFn: (v: { id: string; archived: boolean }) =>
+      archiveBoardFn({ data: v }),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["boards", workspaceId] });
+      toast.success(v.archived ? "Board archived" : "Board restored");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Action failed"),
+  });
+
+  const del = useMutation({
+    mutationFn: (id: string) => deleteBoardFn({ data: { id } }),
+    onSuccess: (_d, id) => {
+      qc.invalidateQueries({ queryKey: ["boards", workspaceId] });
+      setDeleteTarget(null);
+      toast.success("Board deleted");
+      if (activeBoardId === id) {
+        navigate({ to: "/w/$workspaceId", params: { workspaceId } });
+      }
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not delete board"),
   });
 
   async function signOut() {
@@ -82,6 +125,15 @@ function WorkspaceShell() {
     typeof window !== "undefined" &&
     window.location.pathname.endsWith("/integrations");
   const [navOpen, setNavOpen] = useState(false);
+
+  const activeBoards = useMemo(
+    () => (boards ?? []).filter((b: any) => !b.archived_at),
+    [boards],
+  );
+  const archivedBoards = useMemo(
+    () => (boards ?? []).filter((b: any) => b.archived_at),
+    [boards],
+  );
 
   return (
     <div className="h-screen w-screen flex bg-background text-foreground overflow-hidden">
@@ -188,29 +240,56 @@ function WorkspaceShell() {
             </Dialog>
           </div>
 
-          {(!boards || boards.length === 0) && (
+          {activeBoards.length === 0 && (
             <div className="px-2 py-6 text-xs text-muted-foreground">
               No boards yet. Click <span className="text-foreground">+</span> to create one.
             </div>
           )}
 
           <div className="space-y-0.5">
-            {boards?.map((b: any) => (
-              <Link
+            {activeBoards.map((b: any) => (
+              <BoardRow
                 key={b.id}
-                to="/w/$workspaceId/b/$boardId"
-                params={{ workspaceId, boardId: b.id }}
-                className={cn(
-                  "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors",
-                  activeBoardId === b.id && "bg-muted text-foreground",
-                )}
-              >
-                <div className="h-2 w-2 rounded-sm" style={{ background: b.color }} />
-                <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="truncate">{b.name}</span>
-              </Link>
+                board={b}
+                workspaceId={workspaceId}
+                active={activeBoardId === b.id}
+                canDelete={canDeleteBoard}
+                onArchive={() => archive.mutate({ id: b.id, archived: true })}
+                onDelete={() => setDeleteTarget({ id: b.id, name: b.name })}
+              />
             ))}
           </div>
+
+          {archivedBoards.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-border/60">
+              <label className="flex items-center justify-between px-2 mb-1 cursor-pointer">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Archived ({archivedBoards.length})
+                </span>
+                <Switch
+                  checked={showArchived}
+                  onCheckedChange={setShowArchived}
+                  aria-label="Show archived boards"
+                />
+              </label>
+              {showArchived && (
+                <div className="space-y-0.5 mt-1 opacity-70">
+                  {archivedBoards.map((b: any) => (
+                    <BoardRow
+                      key={b.id}
+                      board={b}
+                      workspaceId={workspaceId}
+                      active={activeBoardId === b.id}
+                      archived
+                      canDelete={canDeleteBoard}
+                      onUnarchive={() => archive.mutate({ id: b.id, archived: false })}
+                      onDelete={() => setDeleteTarget({ id: b.id, name: b.name })}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="px-2 py-2 border-t border-border/60 flex items-center justify-between">
@@ -256,6 +335,100 @@ function WorkspaceShell() {
         <Outlet />
       </main>
       <SearchPalette workspaceId={workspaceId} />
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title="Delete board?"
+        description={
+          <>
+            <p>
+              This permanently deletes <strong className="text-foreground">{deleteTarget?.name}</strong>{" "}
+              and all of its items, columns, values, comments, automations, forms, and dashboards.
+            </p>
+            <p>This action cannot be undone.</p>
+          </>
+        }
+        confirmText={deleteTarget?.name ?? ""}
+        confirmLabel="Delete board"
+        loading={del.isPending}
+        onConfirm={() => deleteTarget && del.mutate(deleteTarget.id)}
+      />
+    </div>
+  );
+}
+
+function BoardRow({
+  board,
+  workspaceId,
+  active,
+  archived = false,
+  canDelete,
+  onArchive,
+  onUnarchive,
+  onDelete,
+}: {
+  board: { id: string; name: string; color: string };
+  workspaceId: string;
+  active: boolean;
+  archived?: boolean;
+  canDelete: boolean;
+  onArchive?: () => void;
+  onUnarchive?: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "group flex items-center gap-1 rounded-md pr-1 hover:bg-muted transition-colors",
+        active && "bg-muted",
+      )}
+    >
+      <Link
+        to="/w/$workspaceId/b/$boardId"
+        params={{ workspaceId, boardId: board.id }}
+        className="flex-1 min-w-0 flex items-center gap-2 px-2 py-1.5 text-sm"
+      >
+        <div className="h-2 w-2 rounded-sm shrink-0" style={{ background: board.color }} />
+        <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <span className="truncate">{board.name}</span>
+      </Link>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className={cn(
+              "h-6 w-6 grid place-items-center rounded text-muted-foreground hover:text-foreground hover:bg-background/60 shrink-0",
+              "opacity-0 group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100",
+            )}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Board actions"
+          >
+            <MoreHorizontal className="h-3.5 w-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          {archived ? (
+            <DropdownMenuItem onClick={onUnarchive}>
+              <ArchiveRestore className="h-3.5 w-3.5 mr-2" /> Unarchive
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={onArchive}>
+              <Archive className="h-3.5 w-3.5 mr-2" /> Archive
+            </DropdownMenuItem>
+          )}
+          {canDelete && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={onDelete}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete…
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

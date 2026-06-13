@@ -303,6 +303,7 @@ export function BoardCanvas({
                   }).then(invalidate)
                 }
                 workspaceId={workspaceId}
+                boardId={boardId}
                 onAddItem={() =>
                   createItemFn({ data: { boardId, groupId: group.id, title: "New item" } }).then(invalidate)
                 }

@@ -551,6 +551,36 @@ export function BoardCanvas({
       )}
 
       <ItemDrawer itemId={drawerItemId} onClose={() => setDrawerItemId(null)} />
+
+      <ConfirmDeleteDialog
+        open={confirmDelete}
+        onOpenChange={(o) => !o && setConfirmDelete(false)}
+        title="Delete board?"
+        description={
+          <>
+            <p>
+              This permanently deletes <strong className="text-foreground">{data.board.name}</strong>{" "}
+              and all of its items, columns, values, comments, automations, forms, and dashboards.
+            </p>
+            <p>This action cannot be undone.</p>
+          </>
+        }
+        confirmText={data.board.name}
+        confirmLabel="Delete board"
+        loading={deletingBoard}
+        onConfirm={() => {
+          setDeletingBoard(true);
+          deleteBoardFn({ data: { id: boardId } })
+            .then(() => {
+              qc.invalidateQueries({ queryKey: ["boards", workspaceId] });
+              toast.success("Board deleted");
+              setConfirmDelete(false);
+              navigate({ to: "/w/$workspaceId", params: { workspaceId } });
+            })
+            .catch((e: any) => toast.error(e?.message ?? "Could not delete board"))
+            .finally(() => setDeletingBoard(false));
+        }}
+      />
     </div>
   );
 }

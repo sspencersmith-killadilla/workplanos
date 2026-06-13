@@ -8,9 +8,14 @@ const payloadSchema = z.object({
     id: z.string().min(1),
     title: z.string().max(500).optional(),
     starts_at: z.string().optional(),
+    ends_at: z.string().nullable().optional(),
+    doors_at: z.string().nullable().optional(),
     venue: z.string().max(500).optional(),
     status: z.string().max(120).optional(),
     assignee_email: z.string().email().optional(),
+    tickets_available: z.number().nullable().optional(),
+    tickets_sold: z.number().nullable().optional(),
+    notes: z.string().max(5000).nullable().optional(),
     url: z.string().url().optional(),
   }),
 });
@@ -169,7 +174,13 @@ export const Route = createFileRoute("/api/public/integrations/tess/inbound")({
         }
 
         if (ev.starts_at) {
-          const dateCol = byTitle.get("date") || byTitle.get("starts at") || byTitle.get("when");
+          const dateCol =
+            byTitle.get("due date") ||
+            byTitle.get("due") ||
+            byTitle.get("event date") ||
+            byTitle.get("date") ||
+            byTitle.get("starts at") ||
+            byTitle.get("when");
           if (dateCol) await upsertValue(dateCol.id, { date_value: ev.starts_at });
         }
         if (ev.venue) {
@@ -187,7 +198,10 @@ export const Route = createFileRoute("/api/public/integrations/tess/inbound")({
           }
         }
         if (ev.assignee_email) {
-          const peopleCol = byTitle.get("assignee") || byTitle.get("people") || byTitle.get("owner");
+          const peopleCol =
+            byTitle.get("owner") ||
+            byTitle.get("assignee") ||
+            byTitle.get("people");
           if (peopleCol && peopleCol.kind === "people") {
             const { data: prof } = await supabaseAdmin
               .from("profiles")
@@ -195,6 +209,64 @@ export const Route = createFileRoute("/api/public/integrations/tess/inbound")({
               .ilike("email", ev.assignee_email)
               .maybeSingle();
             if (prof) await upsertValue(peopleCol.id, { people_user_ids: [prof.id] });
+          }
+        }
+
+        // Link column ← TESS event URL
+        if (ev.url) {
+          const linkCol =
+            byTitle.get("link") ||
+            byTitle.get("tess link") ||
+            byTitle.get("event link") ||
+            byTitle.get("url");
+          if (linkCol) {
+            if (linkCol.kind === "link") {
+              await upsertValue(linkCol.id, { link_url: ev.url, link_label: ev.title ?? ev.url });
+            } else {
+              await upsertValue(linkCol.id, { text_value: ev.url });
+            }
+          }
+        }
+
+        // Notes column ← consolidated auto-block (preserves manual notes outside markers)
+        const autoLines: string[] = [];
+        if (ev.venue) autoLines.push(`Location: ${ev.venue}`);
+        if (ev.doors_at) autoLines.push(`Doors: ${formatTime(ev.doors_at)}`);
+        if (ev.starts_at) {
+          autoLines.push(
+            ev.ends_at
+              ? `Show: ${formatTime(ev.starts_at)} – ${formatTime(ev.ends_at)}`
+              : `Show: ${formatTime(ev.starts_at)}`,
+          );
+        }
+        if (ev.tickets_available != null || ev.tickets_sold != null) {
+          const sold = ev.tickets_sold ?? 0;
+          const cap = ev.tickets_available ?? null;
+          autoLines.push(
+            cap != null
+              ? `Tickets: ${sold.toLocaleString()} / ${cap.toLocaleString()} sold`
+              : `Tickets sold: ${sold.toLocaleString()}`,
+          );
+        }
+        if (ev.notes) autoLines.push("", ev.notes);
+
+        if (autoLines.length > 0) {
+          const notesCol =
+            byTitle.get("notes") ||
+            byTitle.get("details") ||
+            byTitle.get("info");
+          if (notesCol) {
+            const { data: existingVal } = await supabaseAdmin
+              .from("item_values")
+              .select("text_value")
+              .eq("item_id", itemId!)
+              .eq("column_id", notesCol.id)
+              .maybeSingle();
+            const prior = (existingVal as any)?.text_value ?? "";
+            const autoBlock =
+              `<!-- tess:auto -->\n${autoLines.join("\n")}\n<!-- /tess:auto -->`;
+            const next = mergeAutoBlock(prior, autoBlock);
+            await upsertValue(notesCol.id, { text_value: next });
           }
         }
 

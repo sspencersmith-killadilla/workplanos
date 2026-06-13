@@ -47,7 +47,7 @@ export const getBoard = createServerFn({ method: "GET" })
         .order("position", { ascending: true }),
       supabase
         .from("item_values")
-        .select("item_id, column_id, text_value, number_value, date_value, date_end_value, link_url, link_label, status_option_id, people_user_ids")
+        .select("item_id, column_id, text_value, number_value, date_value, date_end_value, link_url, link_label, status_option_id, people_user_ids, people_external_ids")
         .in(
           "item_id",
           (
@@ -271,6 +271,15 @@ export const createItem = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    try {
+      const { dispatchAutomations } = await import("./automations-dispatch.server");
+      await dispatchAutomations(context.supabase, {
+        boardId: data.boardId,
+        itemId: item.id,
+        actorId: context.userId,
+        trigger: { kind: "item_created" },
+      });
+    } catch {}
     return { id: item.id };
   });
 
@@ -472,6 +481,7 @@ export const upsertValue = createServerFn({ method: "POST" })
       link_label?: string | null;
       status_option_id?: string | null;
       people_user_ids?: string[] | null;
+      people_external_ids?: string[] | null;
     }) =>
       z
         .object({
@@ -485,6 +495,7 @@ export const upsertValue = createServerFn({ method: "POST" })
           link_label: z.string().nullable().optional(),
           status_option_id: z.string().nullable().optional(),
           people_user_ids: z.array(z.string().uuid()).nullable().optional(),
+          people_external_ids: z.array(z.string().uuid()).nullable().optional(),
         })
         .parse(d),
   )
@@ -592,6 +603,30 @@ export const upsertValue = createServerFn({ method: "POST" })
         // swallow — do not block the value update
       }
     }
+
+    // Generic dispatch: column_changed + item_updated
+    try {
+      const { data: item } = await context.supabase
+        .from("items")
+        .select("board_id")
+        .eq("id", itemId)
+        .single();
+      if (item) {
+        const { dispatchAutomations } = await import("./automations-dispatch.server");
+        await dispatchAutomations(context.supabase, {
+          boardId: item.board_id,
+          itemId,
+          actorId: context.userId,
+          trigger: { kind: "column_changed", columnId },
+        });
+        await dispatchAutomations(context.supabase, {
+          boardId: item.board_id,
+          itemId,
+          actorId: context.userId,
+          trigger: { kind: "item_updated" },
+        });
+      }
+    } catch {}
 
     return { ok: true };
   });

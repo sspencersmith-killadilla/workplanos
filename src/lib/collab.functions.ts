@@ -166,6 +166,23 @@ export const addComment = createServerFn({ method: "POST" })
         }
       }
     }
+    try {
+      const { dispatchAutomations } = await import("./automations-dispatch.server");
+      if (itemRow) {
+        await dispatchAutomations(supabase, {
+          boardId: itemRow.board_id,
+          itemId: data.itemId,
+          actorId: userId,
+          trigger: { kind: "comment_added" },
+        });
+        await dispatchAutomations(supabase, {
+          boardId: itemRow.board_id,
+          itemId: data.itemId,
+          actorId: userId,
+          trigger: { kind: "activity_added" },
+        });
+      }
+    } catch {}
     return { id: comment.id };
   });
 

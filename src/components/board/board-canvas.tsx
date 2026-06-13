@@ -21,6 +21,7 @@ import {
   Copy,
   CheckCircle2,
   Circle,
+  Settings2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -95,6 +96,7 @@ type Val = {
   link_label: string | null;
   status_option_id: string | null;
   people_user_ids: string[] | null;
+  people_external_ids: string[] | null;
 };
 
 export function BoardCanvas({
@@ -277,6 +279,14 @@ export function BoardCanvas({
           <Zap className="h-3.5 w-3.5" /> Automations
         </Link>
 
+        <Link
+          to="/w/$workspaceId/b/$boardId/customize"
+          params={{ workspaceId, boardId }}
+          className="ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+        >
+          <Settings2 className="h-3.5 w-3.5" /> Customize
+        </Link>
+
         <ShareEmbedButton boardId={boardId} />
       </div>
 
@@ -302,6 +312,7 @@ export function BoardCanvas({
                   }).then(invalidate)
                 }
                 workspaceId={workspaceId}
+                boardId={boardId}
                 onAddItem={() =>
                   createItemFn({ data: { boardId, groupId: group.id, title: "New item" } }).then(invalidate)
                 }
@@ -374,6 +385,7 @@ function GroupSection(props: {
   onToggleComplete: (id: string, completed: boolean) => void;
   onAddSubItem: (parentId: string) => void;
   workspaceId: string;
+  boardId: string;
   onAddItem: () => void;
   onDeleteGroup: () => void;
   onUpdateGroup: (patch: Partial<Group>) => void;
@@ -570,6 +582,7 @@ function GroupSection(props: {
                         column={column}
                         value={values.get(item.id)?.get(column.id) ?? null}
                         workspaceId={props.workspaceId}
+                        boardId={props.boardId}
                         onSave={(patch) => props.onUpsertValue({ itemId: item.id, columnId: column.id, ...patch })}
                       />
                     </td>
@@ -671,11 +684,13 @@ function Cell({
   column,
   value,
   workspaceId,
+  boardId,
   onSave,
 }: {
   column: Col;
   value: Val | null;
   workspaceId: string;
+  boardId: string;
   onSave: (patch: Record<string, any>) => Promise<unknown> | void;
 }) {
   if (column.kind === "status") {
@@ -762,8 +777,11 @@ function Cell({
     return (
       <PeoplePicker
         workspaceId={workspaceId}
+        boardId={boardId}
         value={value?.people_user_ids ?? []}
+        externalValue={value?.people_external_ids ?? []}
         onChange={(people_user_ids) => onSave({ people_user_ids })}
+        onChangeExternal={(people_external_ids) => onSave({ people_external_ids })}
       />
     );
   }

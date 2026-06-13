@@ -2,11 +2,21 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-const triggerSchema = z.object({
-  kind: z.literal("status_change"),
-  columnId: z.string().uuid(),
-  optionId: z.string().min(1),
-});
+const triggerSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("status_change"),
+    columnId: z.string().uuid(),
+    optionId: z.string().min(1),
+  }),
+  z.object({ kind: z.literal("item_created") }),
+  z.object({ kind: z.literal("item_updated") }),
+  z.object({
+    kind: z.literal("column_changed"),
+    columnId: z.string().uuid(),
+  }),
+  z.object({ kind: z.literal("comment_added") }),
+  z.object({ kind: z.literal("activity_added") }),
+]);
 
 const actionSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -16,6 +26,10 @@ const actionSchema = z.discriminatedUnion("kind", [
   }),
   z.object({
     kind: z.literal("notify"),
+    message: z.string().min(1).max(280),
+  }),
+  z.object({
+    kind: z.literal("notify_people"),
     message: z.string().min(1).max(280),
   }),
 ]);

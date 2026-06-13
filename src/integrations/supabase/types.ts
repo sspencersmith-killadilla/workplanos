@@ -1184,6 +1184,7 @@ export type Database = {
       }
       is_member: { Args: { _user: string; _ws: string }; Returns: boolean }
       item_workspace: { Args: { _item: string }; Returns: string }
+      shares_workspace: { Args: { _a: string; _b: string }; Returns: boolean }
     }
     Enums: {
       app_role: "super_admin"

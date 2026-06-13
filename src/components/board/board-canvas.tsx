@@ -22,7 +22,27 @@ import {
   CheckCircle2,
   Circle,
   Settings2,
+  GripVertical,
 } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  DragOverlay,
+  useDroppable,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getBoard,
@@ -151,6 +171,14 @@ export function BoardCanvas({
 
   const invalidate = () => qc.invalidateQueries({ queryKey: key });
 
+  // Optimistic local copy of items so DnD across groups feels instant.
+  const [localItems, setLocalItems] = useState<Item[] | null>(null);
+  useEffect(() => {
+    setLocalItems(null);
+  }, [data?.items]);
+  const effectiveItems: Item[] =
+    localItems ?? (((data?.items ?? []) as Item[]));
+
   const valuesByItem = useMemo(() => {
     const map = new Map<string, Map<string, Val>>();
 
@@ -168,7 +196,7 @@ export function BoardCanvas({
   const itemsByGroup = useMemo(() => {
     const map = new Map<string, Item[]>();
 
-    (data?.items ?? []).forEach((item: any) => {
+    effectiveItems.forEach((item: any) => {
       if (item.parent_item_id) return;
 
       const groupKey = item.group_id ?? "__none";
@@ -180,12 +208,13 @@ export function BoardCanvas({
       map.get(groupKey)!.push(item);
     });
 
+    for (const arr of map.values()) arr.sort((a, b) => a.position - b.position);
     return map;
-  }, [data?.items]);
+  }, [effectiveItems]);
 
   const subItemsByParent = useMemo(() => {
     const map = new Map<string, Item[]>();
-    (data?.items ?? []).forEach((item: any) => {
+    effectiveItems.forEach((item: any) => {
       if (!item.parent_item_id) return;
       const arr = map.get(item.parent_item_id) ?? [];
       arr.push(item);
@@ -193,7 +222,7 @@ export function BoardCanvas({
     });
     for (const arr of map.values()) arr.sort((a, b) => a.position - b.position);
     return map;
-  }, [data?.items]);
+  }, [effectiveItems]);
 
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [drawerItemId, setDrawerItemId] = useState<string | null>(null);
@@ -220,6 +249,13 @@ export function BoardCanvas({
     });
   };
 
+  // --- DnD (hooks must run before any early return) ---
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
   if (isLoading || !data) {
     return <div className="p-8 text-sm text-muted-foreground">Loading board…</div>;
   }
@@ -227,12 +263,71 @@ export function BoardCanvas({
   const columns = (data.columns ?? []) as Col[];
   const groups = (data.groups ?? []) as Group[];
   const views = (data.views ?? []) as { id: string; kind: string; name: string }[];
-  const allItems = ((data.items ?? []) as any[]).filter((item) => !item.parent_item_id) as Item[];
+  const allItems = (effectiveItems as any[]).filter((item) => !item.parent_item_id) as Item[];
   const tableView = views.find((view) => view.kind === "table") ?? views[0];
   const activeView =
     views.find((view) => view.id === activeViewId) ??
     tableView ??
     { id: "", kind: "table", name: "Table" };
+
+  const activeDragItem = activeDragId ? effectiveItems.find((i) => i.id === activeDragId) ?? null : null;
+
+  const handleDragStart = (e: DragStartEvent) => {
+    setActiveDragId(String(e.active.id));
+  };
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    setActiveDragId(null);
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    const activeItem = effectiveItems.find((i) => i.id === activeId);
+    if (!activeItem) return;
+
+    // Determine destination group + insertion index
+    let destGroupId: string | null = null;
+    let destItems: Item[] = [];
+    let insertBeforeIndex = -1;
+
+    if (overId.startsWith("group:")) {
+      destGroupId = overId.slice("group:".length);
+      destItems = (itemsByGroup.get(destGroupId) ?? []).filter((i) => i.id !== activeId);
+      insertBeforeIndex = destItems.length; // append
+    } else {
+      const overItem = effectiveItems.find((i) => i.id === overId);
+      if (!overItem) return;
+      destGroupId = overItem.group_id;
+      destItems = (itemsByGroup.get(destGroupId ?? "__none") ?? []).filter(
+        (i) => i.id !== activeId,
+      );
+      insertBeforeIndex = destItems.findIndex((i) => i.id === overId);
+      if (insertBeforeIndex < 0) insertBeforeIndex = destItems.length;
+    }
+    if (!destGroupId) return;
+
+    const prev = insertBeforeIndex > 0 ? destItems[insertBeforeIndex - 1] : null;
+    const next = insertBeforeIndex < destItems.length ? destItems[insertBeforeIndex] : null;
+    let newPosition: number;
+    if (prev && next) newPosition = (prev.position + next.position) / 2;
+    else if (prev) newPosition = prev.position + 1024;
+    else if (next) newPosition = next.position - 1024;
+    else newPosition = 1024;
+
+    // Optimistic update
+    const base = effectiveItems.map((i) =>
+      i.id === activeId ? { ...i, group_id: destGroupId, position: newPosition } : i,
+    );
+    setLocalItems(base);
+
+    updateItemFn({ data: { id: activeId, groupId: destGroupId, position: newPosition } })
+      .then(() => invalidate())
+      .catch((err) => {
+        toast.error(err?.message ?? "Failed to move item");
+        setLocalItems(null);
+        invalidate();
+      });
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -292,6 +387,13 @@ export function BoardCanvas({
 
       {activeView.kind === "table" && (
         <div className="flex-1 overflow-auto px-6 py-5">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveDragId(null)}
+          >
           <div className="space-y-6 min-w-fit">
             {groups.map((group) => (
               <GroupSection
@@ -332,6 +434,7 @@ export function BoardCanvas({
                 }
                 onDeleteColumn={(id) => deleteColumnFn({ data: { id } }).then(invalidate)}
                 onOpenItem={setDrawerItemId}
+                activeDragId={activeDragId}
               />
             ))}
 
@@ -342,6 +445,15 @@ export function BoardCanvas({
               <Plus className="h-4 w-4" /> Add group
             </button>
           </div>
+          <DragOverlay>
+            {activeDragItem ? (
+              <div className="bg-card border border-primary/50 shadow-lg rounded-md px-3 py-1.5 text-sm flex items-center gap-2 max-w-md">
+                <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="truncate">{activeDragItem.title}</span>
+              </div>
+            ) : null}
+          </DragOverlay>
+          </DndContext>
         </div>
       )}
 
@@ -400,12 +512,21 @@ function GroupSection(props: {
   onAddColumn: (kind: string, title: string) => void;
   onDeleteColumn: (id: string) => void;
   onOpenItem: (id: string) => void;
+  activeDragId: string | null;
 }) {
   const { group, columns, items, values } = props;
   const collapsed = group.collapsed;
 
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `group:${group.id}` });
+
   return (
-    <div className="rounded-lg border border-border/60 overflow-hidden bg-card/30">
+    <div
+      ref={setDropRef}
+      className={cn(
+        "rounded-lg border border-border/60 overflow-hidden bg-card/30 transition-colors",
+        isOver && "ring-2 ring-primary/40",
+      )}
+    >
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border/60">
         <button
           className="text-muted-foreground hover:text-foreground"
@@ -518,83 +639,33 @@ function GroupSection(props: {
               </tr>
             </thead>
             <tbody>
+              <SortableContext
+                items={items.map((i) => i.id)}
+                strategy={verticalListSortingStrategy}
+              >
               {items.map((item) => {
                 const subs = props.subItemsByParent.get(item.id) ?? [];
                 const expanded = props.expandedParents.has(item.id);
                 const completedCount = subs.filter((s) => s.completed_at).length;
                 return (
                 <Fragment key={item.id}>
-                <tr className="border-t border-border/40 hover:bg-muted/20 group">
-                  <td className="px-3 py-1.5 sticky left-0 bg-background z-10 border-r border-border/40 group-hover:bg-muted/20">
-                    <div className="flex items-center gap-2">
-                      {subs.length > 0 ? (
-                        <button
-                          onClick={() => props.onToggleExpanded(item.id)}
-                          className="h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
-                          aria-label={expanded ? "Collapse sub-items" : "Expand sub-items"}
-                        >
-                          {expanded ? (
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          ) : (
-                            <ChevronRight className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                      ) : (
-                        <span className="w-5 shrink-0" />
-                      )}
-                      <button
-                        onClick={() => props.onOpenItem(item.id)}
-                        className="opacity-0 group-hover:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
-                        aria-label="Open item"
-                      >
-                        <Expand className="h-3 w-3" />
-                      </button>
-                      <InlineEdit
-                        value={item.title}
-                        onSave={(title) => props.onUpdateItem(item.id, title)}
-                        className="flex-1 text-sm"
-                      />
-                      {subs.length > 0 && (
-                        <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
-                          {completedCount}/{subs.length}
-                        </span>
-                      )}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="opacity-0 group-hover:opacity-100 h-6 w-6 grid place-items-center rounded hover:bg-muted text-muted-foreground">
-                            <MoreHorizontal className="h-3.5 w-3.5" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => props.onAddSubItem(item.id)}>
-                            <Plus className="h-3.5 w-3.5 mr-2" /> Add sub-item
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => props.onDeleteItem(item.id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete item
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </td>
-
-                  {columns.map((column) => (
-                    <td key={column.id} className="px-2 py-1 border-r border-border/40 align-middle">
-                      <Cell
-                        column={column}
-                        value={values.get(item.id)?.get(column.id) ?? null}
-                        workspaceId={props.workspaceId}
-                        boardId={props.boardId}
-                        onSave={(patch) => props.onUpsertValue({ itemId: item.id, columnId: column.id, ...patch })}
-                      />
-                    </td>
-                  ))}
-
-                  <td />
-                </tr>
+                <SortableItemRow
+                  item={item}
+                  columns={columns}
+                  values={values}
+                  workspaceId={props.workspaceId}
+                  boardId={props.boardId}
+                  subs={subs}
+                  expanded={expanded}
+                  completedCount={completedCount}
+                  isDragging={props.activeDragId === item.id}
+                  onToggleExpanded={props.onToggleExpanded}
+                  onOpenItem={props.onOpenItem}
+                  onUpdateItem={props.onUpdateItem}
+                  onDeleteItem={props.onDeleteItem}
+                  onAddSubItem={props.onAddSubItem}
+                  onUpsertValue={props.onUpsertValue}
+                />
                 {expanded &&
                   subs.map((sub) => (
                     <tr
@@ -666,6 +737,7 @@ function GroupSection(props: {
                 </Fragment>
                 );
               })}
+              </SortableContext>
 
               <tr>
                 <td colSpan={columns.length + 2} className="px-3 py-2 border-t border-border/40">
@@ -682,6 +754,129 @@ function GroupSection(props: {
         </div>
       )}
     </div>
+  );
+}
+
+function SortableItemRow(props: {
+  item: Item;
+  columns: Col[];
+  values: Map<string, Map<string, Val>>;
+  workspaceId: string;
+  boardId: string;
+  subs: Item[];
+  expanded: boolean;
+  completedCount: number;
+  isDragging: boolean;
+  onToggleExpanded: (id: string) => void;
+  onOpenItem: (id: string) => void;
+  onUpdateItem: (id: string, title: string) => void;
+  onDeleteItem: (id: string) => void;
+  onAddSubItem: (parentId: string) => void;
+  onUpsertValue: (payload: any) => Promise<unknown>;
+}) {
+  const { item, columns, values, subs, expanded, completedCount } = props;
+  const {
+    setNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging || props.isDragging ? 0.4 : 1,
+  };
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className="border-t border-border/40 hover:bg-muted/20 group"
+    >
+      <td className="px-3 py-1.5 sticky left-0 bg-background z-10 border-r border-border/40 group-hover:bg-muted/20">
+        <div className="flex items-center gap-2">
+          <button
+            ref={(el) => {
+              // dnd-kit attaches listeners to this button as the drag handle
+              if (el) (el as any).dataset.dragHandle = "1";
+            }}
+            {...attributes}
+            {...listeners}
+            className="opacity-0 group-hover:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing"
+            aria-label="Drag to reorder or move to another group"
+            title="Drag to move"
+          >
+            <GripVertical className="h-3.5 w-3.5" />
+          </button>
+          {subs.length > 0 ? (
+            <button
+              onClick={() => props.onToggleExpanded(item.id)}
+              className="h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
+              aria-label={expanded ? "Collapse sub-items" : "Expand sub-items"}
+            >
+              {expanded ? (
+                <ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5" />
+              )}
+            </button>
+          ) : (
+            <span className="w-5 shrink-0" />
+          )}
+          <button
+            onClick={() => props.onOpenItem(item.id)}
+            className="opacity-0 group-hover:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
+            aria-label="Open item"
+          >
+            <Expand className="h-3 w-3" />
+          </button>
+          <InlineEdit
+            value={item.title}
+            onSave={(title) => props.onUpdateItem(item.id, title)}
+            className="flex-1 text-sm"
+          />
+          {subs.length > 0 && (
+            <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+              {completedCount}/{subs.length}
+            </span>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="opacity-0 group-hover:opacity-100 h-6 w-6 grid place-items-center rounded hover:bg-muted text-muted-foreground">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => props.onAddSubItem(item.id)}>
+                <Plus className="h-3.5 w-3.5 mr-2" /> Add sub-item
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => props.onDeleteItem(item.id)}
+                className="text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete item
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </td>
+
+      {columns.map((column) => (
+        <td key={column.id} className="px-2 py-1 border-r border-border/40 align-middle">
+          <Cell
+            column={column}
+            value={values.get(item.id)?.get(column.id) ?? null}
+            workspaceId={props.workspaceId}
+            boardId={props.boardId}
+            onSave={(patch) => props.onUpsertValue({ itemId: item.id, columnId: column.id, ...patch })}
+          />
+        </td>
+      ))}
+
+      <td />
+    </tr>
   );
 }
 

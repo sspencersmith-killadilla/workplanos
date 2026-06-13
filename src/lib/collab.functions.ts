@@ -37,7 +37,7 @@ export const getItemDetail = createServerFn({ method: "GET" })
           .order("created_at", { ascending: false }),
         supabase
           .from("items")
-          .select("id, title, position, created_at")
+          .select("id, title, position, created_at, completed_at")
           .eq("parent_item_id", itemId)
           .order("position", { ascending: true }),
         Promise.resolve(null),

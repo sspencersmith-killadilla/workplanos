@@ -35,6 +35,7 @@ import {
   deleteFile,
   signFileUrl,
 } from "@/lib/collab.functions";
+import { setItemCompleted } from "@/lib/boards.functions";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
@@ -566,6 +567,7 @@ function SubItemsTab({
   onChanged: () => void;
 }) {
   const createSubFn = useServerFn(createSubItem);
+  const setCompletedFn = useServerFn(setItemCompleted);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -594,8 +596,30 @@ function SubItemsTab({
                 key={s.id}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/40 text-sm"
               >
-                <Circle className="h-4 w-4 text-muted-foreground" />
-                <span className="flex-1 truncate">{s.title}</span>
+                <button
+                  onClick={async () => {
+                    await setCompletedFn({
+                      data: { id: s.id, completed: !s.completed_at },
+                    });
+                    onChanged();
+                  }}
+                  className="shrink-0"
+                  aria-label={s.completed_at ? "Mark incomplete" : "Mark complete"}
+                >
+                  {s.completed_at ? (
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Circle className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+                <span
+                  className={cn(
+                    "flex-1 truncate",
+                    s.completed_at && "line-through text-muted-foreground",
+                  )}
+                >
+                  {s.title}
+                </span>
               </li>
             ))}
           </ul>

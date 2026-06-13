@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { Fragment, type CSSProperties, useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -19,6 +19,8 @@ import {
   Zap,
   Share2,
   Copy,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -33,6 +35,7 @@ import {
   deleteColumn,
   upsertValue,
   updateBoard,
+  setItemCompleted,
 } from "@/lib/boards.functions";
 import { getBoardEmbedToken, setBoardEmbedEnabled } from "@/lib/integrations.functions";
 import { toast } from "sonner";
@@ -72,7 +75,14 @@ type Group = {
   collapsed: boolean;
 };
 
-type Item = { id: string; group_id: string | null; title: string; position: number };
+type Item = {
+  id: string;
+  group_id: string | null;
+  title: string;
+  position: number;
+  parent_item_id?: string | null;
+  completed_at?: string | null;
+};
 
 type Val = {
   item_id: string;
@@ -107,6 +117,7 @@ export function BoardCanvas({
   const deleteColumnFn = useServerFn(deleteColumn);
   const upsertValueFn = useServerFn(upsertValue);
   const updateBoardFn = useServerFn(updateBoard);
+  const setItemCompletedFn = useServerFn(setItemCompleted);
 
   const key = ["board", boardId] as const;
   const { data, isLoading } = useQuery({
@@ -170,8 +181,42 @@ export function BoardCanvas({
     return map;
   }, [data?.items]);
 
+  const subItemsByParent = useMemo(() => {
+    const map = new Map<string, Item[]>();
+    (data?.items ?? []).forEach((item: any) => {
+      if (!item.parent_item_id) return;
+      const arr = map.get(item.parent_item_id) ?? [];
+      arr.push(item);
+      map.set(item.parent_item_id, arr);
+    });
+    for (const arr of map.values()) arr.sort((a, b) => a.position - b.position);
+    return map;
+  }, [data?.items]);
+
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [drawerItemId, setDrawerItemId] = useState<string | null>(null);
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = window.localStorage.getItem(`board:${boardId}:expandedParents`);
+      if (raw) return new Set(JSON.parse(raw));
+    } catch {}
+    return new Set();
+  });
+  const toggleExpanded = (id: string) => {
+    setExpandedParents((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      try {
+        window.localStorage.setItem(
+          `board:${boardId}:expandedParents`,
+          JSON.stringify(Array.from(next)),
+        );
+      } catch {}
+      return next;
+    });
+  };
 
   if (isLoading || !data) {
     return <div className="p-8 text-sm text-muted-foreground">Loading board…</div>;
@@ -245,6 +290,17 @@ export function BoardCanvas({
                 columns={columns}
                 items={itemsByGroup.get(group.id) ?? []}
                 values={valuesByItem}
+                subItemsByParent={subItemsByParent}
+                expandedParents={expandedParents}
+                onToggleExpanded={toggleExpanded}
+                onToggleComplete={(id, completed) =>
+                  setItemCompletedFn({ data: { id, completed } }).then(invalidate)
+                }
+                onAddSubItem={(parentId) =>
+                  createItemFn({
+                    data: { boardId, groupId: group.id, title: "New sub-item", parentId },
+                  }).then(invalidate)
+                }
                 workspaceId={workspaceId}
                 onAddItem={() =>
                   createItemFn({ data: { boardId, groupId: group.id, title: "New item" } }).then(invalidate)
@@ -312,6 +368,11 @@ function GroupSection(props: {
   columns: Col[];
   items: Item[];
   values: Map<string, Map<string, Val>>;
+  subItemsByParent: Map<string, Item[]>;
+  expandedParents: Set<string>;
+  onToggleExpanded: (id: string) => void;
+  onToggleComplete: (id: string, completed: boolean) => void;
+  onAddSubItem: (parentId: string) => void;
   workspaceId: string;
   onAddItem: () => void;
   onDeleteGroup: () => void;
@@ -440,10 +501,30 @@ function GroupSection(props: {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
-                <tr key={item.id} className="border-t border-border/40 hover:bg-muted/20 group">
+              {items.map((item) => {
+                const subs = props.subItemsByParent.get(item.id) ?? [];
+                const expanded = props.expandedParents.has(item.id);
+                const completedCount = subs.filter((s) => s.completed_at).length;
+                return (
+                <Fragment key={item.id}>
+                <tr className="border-t border-border/40 hover:bg-muted/20 group">
                   <td className="px-3 py-1.5 sticky left-0 bg-background z-10 border-r border-border/40 group-hover:bg-muted/20">
                     <div className="flex items-center gap-2">
+                      {subs.length > 0 ? (
+                        <button
+                          onClick={() => props.onToggleExpanded(item.id)}
+                          className="h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
+                          aria-label={expanded ? "Collapse sub-items" : "Expand sub-items"}
+                        >
+                          {expanded ? (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      ) : (
+                        <span className="w-5 shrink-0" />
+                      )}
                       <button
                         onClick={() => props.onOpenItem(item.id)}
                         className="opacity-0 group-hover:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
@@ -456,6 +537,11 @@ function GroupSection(props: {
                         onSave={(title) => props.onUpdateItem(item.id, title)}
                         className="flex-1 text-sm"
                       />
+                      {subs.length > 0 && (
+                        <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+                          {completedCount}/{subs.length}
+                        </span>
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button className="opacity-0 group-hover:opacity-100 h-6 w-6 grid place-items-center rounded hover:bg-muted text-muted-foreground">
@@ -463,6 +549,10 @@ function GroupSection(props: {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => props.onAddSubItem(item.id)}>
+                            <Plus className="h-3.5 w-3.5 mr-2" /> Add sub-item
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => props.onDeleteItem(item.id)}
                             className="text-destructive"
@@ -487,7 +577,77 @@ function GroupSection(props: {
 
                   <td />
                 </tr>
-              ))}
+                {expanded &&
+                  subs.map((sub) => (
+                    <tr
+                      key={sub.id}
+                      className="border-t border-border/40 hover:bg-muted/10 group/sub bg-muted/5"
+                    >
+                      <td
+                        colSpan={columns.length + 2}
+                        className="px-3 py-1 sticky left-0 z-10 border-r border-border/40"
+                      >
+                        <div className="flex items-center gap-2 pl-8">
+                          <span className="text-muted-foreground/60 text-xs select-none">└</span>
+                          <button
+                            onClick={() =>
+                              props.onToggleComplete(sub.id, !sub.completed_at)
+                            }
+                            className="shrink-0"
+                            aria-label={
+                              sub.completed_at ? "Mark incomplete" : "Mark complete"
+                            }
+                          >
+                            {sub.completed_at ? (
+                              <CheckCircle2 className="h-4 w-4 text-primary" />
+                            ) : (
+                              <Circle className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </button>
+                          <InlineEdit
+                            value={sub.title}
+                            onSave={(title) => props.onUpdateItem(sub.id, title)}
+                            className={cn(
+                              "flex-1 text-sm",
+                              sub.completed_at && "line-through text-muted-foreground",
+                            )}
+                          />
+                          <button
+                            onClick={() => props.onOpenItem(sub.id)}
+                            className="opacity-0 group-hover/sub:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
+                            aria-label="Open sub-item"
+                          >
+                            <Expand className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => props.onDeleteItem(sub.id)}
+                            className="opacity-0 group-hover/sub:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-destructive shrink-0"
+                            aria-label="Delete sub-item"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                {expanded && (
+                  <tr className="bg-muted/5">
+                    <td
+                      colSpan={columns.length + 2}
+                      className="px-3 py-1 border-t border-border/40"
+                    >
+                      <button
+                        onClick={() => props.onAddSubItem(item.id)}
+                        className="flex items-center gap-2 pl-12 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        <Plus className="h-3 w-3" /> Add sub-item
+                      </button>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
+                );
+              })}
 
               <tr>
                 <td colSpan={columns.length + 2} className="px-3 py-2 border-t border-border/40">

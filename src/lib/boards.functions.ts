@@ -42,7 +42,7 @@ export const getBoard = createServerFn({ method: "GET" })
         .order("position", { ascending: true }),
       supabase
         .from("items")
-        .select("id, group_id, parent_item_id, title, position, created_at, created_by")
+        .select("id, group_id, parent_item_id, title, position, created_at, created_by, completed_at")
         .eq("board_id", data.id)
         .order("position", { ascending: true }),
       supabase
@@ -355,6 +355,27 @@ export const deleteItem = createServerFn({ method: "POST" })
       } catch {}
     }
     return { ok: true };
+  });
+
+export const setItemCompleted = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; completed: boolean }) =>
+    z.object({ id: z.string().uuid(), completed: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const completed_at = data.completed ? new Date().toISOString() : null;
+    const { error } = await context.supabase
+      .from("items")
+      .update({ completed_at })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    await context.supabase.from("item_activity").insert({
+      item_id: data.id,
+      actor_id: context.userId,
+      kind: data.completed ? "completed" : "reopened",
+      payload: {},
+    });
+    return { ok: true, completed_at };
   });
 
 /* ====================== COLUMNS ====================== */

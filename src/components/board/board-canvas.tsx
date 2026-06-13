@@ -757,6 +757,129 @@ function GroupSection(props: {
   );
 }
 
+function SortableItemRow(props: {
+  item: Item;
+  columns: Col[];
+  values: Map<string, Map<string, Val>>;
+  workspaceId: string;
+  boardId: string;
+  subs: Item[];
+  expanded: boolean;
+  completedCount: number;
+  isDragging: boolean;
+  onToggleExpanded: (id: string) => void;
+  onOpenItem: (id: string) => void;
+  onUpdateItem: (id: string, title: string) => void;
+  onDeleteItem: (id: string) => void;
+  onAddSubItem: (parentId: string) => void;
+  onUpsertValue: (payload: any) => Promise<unknown>;
+}) {
+  const { item, columns, values, subs, expanded, completedCount } = props;
+  const {
+    setNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging || props.isDragging ? 0.4 : 1,
+  };
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className="border-t border-border/40 hover:bg-muted/20 group"
+    >
+      <td className="px-3 py-1.5 sticky left-0 bg-background z-10 border-r border-border/40 group-hover:bg-muted/20">
+        <div className="flex items-center gap-2">
+          <button
+            ref={(el) => {
+              // dnd-kit attaches listeners to this button as the drag handle
+              if (el) (el as any).dataset.dragHandle = "1";
+            }}
+            {...attributes}
+            {...listeners}
+            className="opacity-0 group-hover:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing"
+            aria-label="Drag to reorder or move to another group"
+            title="Drag to move"
+          >
+            <GripVertical className="h-3.5 w-3.5" />
+          </button>
+          {subs.length > 0 ? (
+            <button
+              onClick={() => props.onToggleExpanded(item.id)}
+              className="h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
+              aria-label={expanded ? "Collapse sub-items" : "Expand sub-items"}
+            >
+              {expanded ? (
+                <ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5" />
+              )}
+            </button>
+          ) : (
+            <span className="w-5 shrink-0" />
+          )}
+          <button
+            onClick={() => props.onOpenItem(item.id)}
+            className="opacity-0 group-hover:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
+            aria-label="Open item"
+          >
+            <Expand className="h-3 w-3" />
+          </button>
+          <InlineEdit
+            value={item.title}
+            onSave={(title) => props.onUpdateItem(item.id, title)}
+            className="flex-1 text-sm"
+          />
+          {subs.length > 0 && (
+            <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+              {completedCount}/{subs.length}
+            </span>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="opacity-0 group-hover:opacity-100 h-6 w-6 grid place-items-center rounded hover:bg-muted text-muted-foreground">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => props.onAddSubItem(item.id)}>
+                <Plus className="h-3.5 w-3.5 mr-2" /> Add sub-item
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => props.onDeleteItem(item.id)}
+                className="text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete item
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </td>
+
+      {columns.map((column) => (
+        <td key={column.id} className="px-2 py-1 border-r border-border/40 align-middle">
+          <Cell
+            column={column}
+            value={values.get(item.id)?.get(column.id) ?? null}
+            workspaceId={props.workspaceId}
+            boardId={props.boardId}
+            onSave={(patch) => props.onUpsertValue({ itemId: item.id, columnId: column.id, ...patch })}
+          />
+        </td>
+      ))}
+
+      <td />
+    </tr>
+  );
+}
+
 function Cell({
   column,
   value,

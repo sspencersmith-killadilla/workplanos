@@ -42,7 +42,7 @@ export const getBoard = createServerFn({ method: "GET" })
         .order("position", { ascending: true }),
       supabase
         .from("items")
-        .select("id, group_id, parent_item_id, title, position, created_at, created_by")
+        .select("id, group_id, parent_item_id, title, position, created_at, created_by, completed_at")
         .eq("board_id", data.id)
         .order("position", { ascending: true }),
       supabase

@@ -8,7 +8,7 @@ export type TessEvent = {
   doors_at?: string | null;
   venue?: string;
   status?: string;
-  assignee_email?: string;
+  assignee_email?: string | null;
   tickets_available?: number | null;
   tickets_sold?: number | null;
   notes?: string | null;

@@ -12,7 +12,7 @@ const payloadSchema = z.object({
     doors_at: z.string().nullable().optional(),
     venue: z.string().max(500).optional(),
     status: z.string().max(120).optional(),
-    assignee_email: z.string().email().optional(),
+    assignee_email: z.string().email().nullable().optional(),
     tickets_available: z.number().nullable().optional(),
     tickets_sold: z.number().nullable().optional(),
     notes: z.string().max(5000).nullable().optional(),

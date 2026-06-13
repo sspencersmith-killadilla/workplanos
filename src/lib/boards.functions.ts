@@ -604,5 +604,29 @@ export const upsertValue = createServerFn({ method: "POST" })
       }
     }
 
+    // Generic dispatch: column_changed + item_updated
+    try {
+      const { data: item } = await context.supabase
+        .from("items")
+        .select("board_id")
+        .eq("id", itemId)
+        .single();
+      if (item) {
+        const { dispatchAutomations } = await import("./automations-dispatch.server");
+        await dispatchAutomations(context.supabase, {
+          boardId: item.board_id,
+          itemId,
+          actorId: context.userId,
+          trigger: { kind: "column_changed", columnId },
+        });
+        await dispatchAutomations(context.supabase, {
+          boardId: item.board_id,
+          itemId,
+          actorId: context.userId,
+          trigger: { kind: "item_updated" },
+        });
+      }
+    } catch {}
+
     return { ok: true };
   });

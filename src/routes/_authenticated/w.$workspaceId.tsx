@@ -124,6 +124,9 @@ function WorkspaceShell() {
   const isIntegrations =
     typeof window !== "undefined" &&
     window.location.pathname.endsWith("/integrations");
+  const isSettings =
+    typeof window !== "undefined" &&
+    window.location.pathname.endsWith("/settings");
   const [navOpen, setNavOpen] = useState(false);
 
   const activeBoards = useMemo(
@@ -325,9 +328,17 @@ function WorkspaceShell() {
               </Link>
             )}
           </div>
-          <button className="h-7 w-7 grid place-items-center rounded-md hover:bg-muted text-muted-foreground">
+          <Link
+            to="/w/$workspaceId/settings"
+            params={{ workspaceId }}
+            title="Workspace settings"
+            className={cn(
+              "h-7 w-7 grid place-items-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground",
+              isSettings && "bg-muted text-foreground",
+            )}
+          >
             <Settings className="h-3.5 w-3.5" />
-          </button>
+          </Link>
         </div>
       </aside>
 

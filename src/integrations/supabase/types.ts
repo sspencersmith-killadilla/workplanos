@@ -159,6 +159,120 @@ export type Database = {
           },
         ]
       }
+      board_external_assignees: {
+        Row: {
+          avatar_url: string | null
+          board_id: string
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          board_id: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          board_id?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_external_assignees_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      board_kpis: {
+        Row: {
+          board_id: string
+          column_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          metric: string
+          name: string
+          period: string
+          position: number
+          status_column_id: string | null
+          status_option_id: string | null
+          target: number
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          board_id: string
+          column_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metric: string
+          name: string
+          period?: string
+          position?: number
+          status_column_id?: string | null
+          status_option_id?: string | null
+          target?: number
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          board_id?: string
+          column_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metric?: string
+          name?: string
+          period?: string
+          position?: number
+          status_column_id?: string | null
+          status_option_id?: string | null
+          target?: number
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_kpis_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_kpis_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "board_columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_kpis_status_column_id_fkey"
+            columns: ["status_column_id"]
+            isOneToOne: false
+            referencedRelation: "board_columns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       board_views: {
         Row: {
           board_id: string
@@ -653,6 +767,7 @@ export type Database = {
           link_label: string | null
           link_url: string | null
           number_value: number | null
+          people_external_ids: string[] | null
           people_user_ids: string[] | null
           status_option_id: string | null
           text_value: string | null
@@ -666,6 +781,7 @@ export type Database = {
           link_label?: string | null
           link_url?: string | null
           number_value?: number | null
+          people_external_ids?: string[] | null
           people_user_ids?: string[] | null
           status_option_id?: string | null
           text_value?: string | null
@@ -679,6 +795,7 @@ export type Database = {
           link_label?: string | null
           link_url?: string | null
           number_value?: number | null
+          people_external_ids?: string[] | null
           people_user_ids?: string[] | null
           status_option_id?: string | null
           text_value?: string | null

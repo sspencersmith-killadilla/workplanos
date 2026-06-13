@@ -27,7 +27,7 @@ export const getBoard = createServerFn({ method: "GET" })
     const [boardRes, colsRes, groupsRes, itemsRes, valuesRes, viewsRes] = await Promise.all([
       supabase
         .from("boards")
-        .select("id, workspace_id, name, description, icon, color")
+        .select("id, workspace_id, name, description, icon, color, archived_at")
         .eq("id", data.id)
         .single(),
       supabase

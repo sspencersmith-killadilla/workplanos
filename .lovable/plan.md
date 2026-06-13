@@ -1,55 +1,100 @@
 ## Goal
 
-Make sub-items first-class on the board:
-1. Render them inline, indented, directly under their parent row.
-2. Give each one a checkbox to mark complete / incomplete, with the title struck through when done.
+Give board owners/admins one place — a new **Customize** tab on each board — to configure KPIs, status options, external (non-member) assignees, and automations that fire on more than just status changes.
 
-The drawer's Sub-items tab stays — it remains the place to add/remove and see activity — but the board itself becomes the primary surface for ticking things off.
+## 1. Board Customize page
 
-## Changes
+New route: `src/routes/_authenticated/w.$workspaceId.b.$boardId.customize.tsx`, linked from the board header next to **Forms** and **Automations**. Visible only to workspace `owner`/`admin` (other members get a "view only" message). Four sections, each described below.
 
-### 1. Schema — add a completion field
-New migration adding `items.completed_at timestamptz null`.
+## 2. Status column customization (surfacing what already exists)
 
-- `null` = open, non-null = done (also gives us "who/when" for free later).
-- No new table; sub-items are already `items` rows with `parent_item_id`.
-- Backfill: none needed.
-- RLS: existing `items` policies already cover it.
+Status options already live in `board_columns.settings.options`, but they're only editable through ad-hoc drawer UI. The Customize page adds a dedicated editor:
 
-### 2. Server function — toggle completion
-Add `setItemCompleted({ id, completed: boolean })` in `src/lib/boards.functions.ts`:
-- Updates `completed_at` to `now()` or `null`.
-- Writes an `item_activity` row (`kind: "completed"` / `"reopened"`) so the change shows in the parent's activity feed.
-- Returns the new state.
+- List every `kind:'status'` column on the board
+- For each: rename column, add/remove options, edit option label + color (color picker), reorder by drag, set a "default" option
+- Save via existing `updateColumn` server fn (no schema change)
+- Warn before deleting an option that's in use; offer "move existing items to <other option>"
 
-### 3. Board canvas — render sub-items inline
-File: `src/components/board/board-canvas.tsx`
+This is the "custom statuses" capability the user asked for, made discoverable.
 
-- Stop filtering out `parent_item_id` rows.
-- Group children under their parent: render parent row, then each child row immediately after, indented (e.g. 24px left padding + a small caret/└ glyph).
-- Children render a slimmer row: checkbox + title only, no column values (sub-items don't carry column data today). This keeps the board readable and avoids implying sub-items have their own status/owner/etc.
-- Add a per-parent collapse toggle (chevron on the parent row) with state persisted in `localStorage` keyed by board id, so long lists stay manageable. Default = expanded.
-- Clicking the sub-item title still opens the drawer for that sub-item (same behaviour as a normal item click).
+## 3. KPI targets per board
 
-### 4. Checkbox behaviour
-- Uses the existing `Checkbox` UI component.
-- Optimistic toggle via TanStack Query `setQueryData`, then call `setItemCompleted`.
-- When checked: title gets `line-through text-muted-foreground`.
-- Available on the inline board row AND on each row in the drawer's Sub-items tab (replacing the decorative `Circle` icon).
+New table `board_kpis`:
 
-### 5. Parent progress hint (small, optional)
-On the parent row, show `2/5` next to the title when it has sub-items, where `2` is completed count. Pure read from already-loaded children — no extra query.
+| field | type | notes |
+| --- | --- | --- |
+| id | uuid pk | |
+| board_id | uuid fk → boards | cascade delete |
+| name | text | e.g. "Tickets sold" |
+| metric | text enum | `count_items` \| `sum_column` \| `avg_column` \| `count_with_status` |
+| column_id | uuid nullable | required for sum/avg |
+| status_column_id, status_option_id | uuid nullable | for count_with_status |
+| target | numeric | the goal |
+| unit | text nullable | e.g. "$", "tickets" |
+| period | text enum | `all_time` \| `month` \| `quarter` \| `year` |
+| position | int | |
 
-## Out of scope
+RLS: workspace members read; owner/admin write. Standard `GRANT` block.
 
-- Sub-items with their own column values (status, owner, dates per sub-item). That's a much bigger change (sub-items would need to inherit or define their own columns) and isn't what you asked for.
-- Auto-completing the parent when all sub-items are done.
-- Drag-to-reorder sub-items on the board. Existing position field still works; reordering can stay in the drawer for now.
+Customize page section "KPIs": list, add, edit, delete, drag-reorder. Each row shows live actual vs target with a progress bar (computed client-side from already-loaded items, no extra fetches for the basic metrics).
 
-## Acceptance check
+These KPIs are then available as a new **KPI card** widget on dashboards (`dashboard_widgets.kind = 'kpi'`, payload `{ board_kpi_id }`). Dashboard widget render is a thin addition to `dashboards.functions.ts` + existing dashboard renderer.
 
-1. Open any item, add two sub-items in the drawer.
-2. Close the drawer — both sub-items appear indented under the parent row on the board, with checkboxes.
-3. Tick one on the board — title strikes through immediately, parent shows `1/2`.
-4. Reload — state persists.
-5. Collapse the parent — sub-items hide; expand — they return.
+## 4. External assignees (non-members)
+
+Problem: today the People column only picks workspace members.
+
+Add table `board_external_assignees`:
+
+| field | type |
+| --- | --- |
+| id | uuid pk |
+| board_id | uuid fk |
+| name | text |
+| email | text nullable |
+| avatar_url | text nullable |
+| created_by | uuid |
+
+RLS: workspace members read; owner/admin write. Standard GRANT block.
+
+Customize page section "External people": CRUD list (name + optional email).
+
+People column stores ids in `item_values.value_json` as an array. Extend the encoding to tagged entries: `{ kind: 'member', id }` or `{ kind: 'external', id }`. Migration: server fn that reads existing arrays of bare uuids continues to work (treated as `member`). `PeoplePicker` gets a second list ("External") below members, with an inline "+ Add external person" that opens a small dialog and refreshes. Notification trigger `notify_people_assignment` keeps working — it just skips `external` entries (no `auth.users` row to notify; optionally send to their email later, out of scope).
+
+TESS outbound payload already sends `assignee_email`; we'll prefer member email, falling back to external email.
+
+## 5. Broader automation triggers
+
+Today `automation_rules.trigger` only supports `status_change`. Extend the discriminated union in `src/lib/automations.functions.ts`:
+
+- `status_change` (existing)
+- `item_created`
+- `item_updated` — any column change on the board
+- `column_changed` — specific `column_id` changed (any new value)
+- `comment_added`
+- `activity_added` — any `item_activity` row
+
+Actions stay as they are (`set_status`, `notify`) plus a new `notify_people` action that pings the item's current People column assignees.
+
+Trigger dispatch is server-side: a single `dispatchAutomations` helper in `automations.functions.ts` called by `updateItemValue`, `createItem`, `addComment`, and after `item_activity` inserts. No DB triggers — keeps it inside server functions where we already have auth context.
+
+The Customize page section "Automations" reuses the existing Automations route's editor (just deep-links), so we don't duplicate UI; new trigger kinds appear in its dropdown.
+
+## 6. Permissions
+
+Every new write fn calls `has_ws_role(boardWorkspace, userId, ['owner','admin'])`. Reads scoped via existing `is_member`.
+
+## Acceptance
+
+1. Owner opens board → **Customize** → renames "Confirmed" status to "Locked in", changes its color → board reflects immediately.
+2. Owner adds KPI "Tickets sold, target 500, sum of column Tickets sold" → KPI shows `342 / 500` with progress bar; adding the same KPI to a dashboard as a card renders the same value.
+3. Owner adds external person "Jane Smith — jane@promoter.com" → People picker on any item shows her under "External"; assigning her does not crash notifications.
+4. Owner creates automation: trigger `comment_added`, action `notify_people` → adding a comment notifies all assignees on that item.
+5. Non-admin member opens Customize → sees read-only view, no save buttons.
+
+## Out of scope (call out explicitly so they're not surprised)
+
+- Emailing external assignees (we only store + display them).
+- Custom item types / per-board templates.
+- Branding (logo/colors) per workspace.
+- KPI metrics that need cross-board joins.

@@ -12,7 +12,7 @@ export const listBoards = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("boards")
-      .select("id, name, description, icon, color, position, created_at")
+      .select("id, name, description, icon, color, position, created_at, archived_at")
       .eq("workspace_id", data.workspaceId)
       .order("position", { ascending: true });
     if (error) throw new Error(error.message);

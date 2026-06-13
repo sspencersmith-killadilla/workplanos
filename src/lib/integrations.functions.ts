@@ -237,6 +237,79 @@ export const retryDispatch = createServerFn({ method: "POST" })
     });
   });
 
+/* ============ Backfill ============ */
+
+export const backfillTessBoard = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { workspaceId: string }) =>
+    z.object({ workspaceId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: ok } = await context.supabase.rpc("has_ws_role", {
+      _ws: data.workspaceId,
+      _user: context.userId,
+      _roles: ["owner"],
+    });
+    if (!ok) throw new Error("Only workspace owners can run a backfill");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: integ } = await supabaseAdmin
+      .from("workspace_integrations")
+      .select("target_board_id")
+      .eq("workspace_id", data.workspaceId)
+      .eq("kind", "tess")
+      .maybeSingle();
+    if (!integ?.target_board_id) throw new Error("No target board configured");
+    const boardId = integ.target_board_id;
+
+    // Find all TESS-linked items on this board
+    const { data: items } = await supabaseAdmin
+      .from("items")
+      .select("id")
+      .eq("board_id", boardId);
+    const itemIds = (items ?? []).map((i: any) => i.id);
+    if (itemIds.length === 0) return { processed: 0, skipped: 0 };
+
+    const { data: refs } = await supabaseAdmin
+      .from("item_external_refs")
+      .select("item_id, external_id")
+      .eq("source", "tess")
+      .in("item_id", itemIds);
+
+    const { processTessEvent } = await import("@/lib/tess-ingest.server");
+
+    let processed = 0;
+    let skipped = 0;
+    for (const ref of refs ?? []) {
+      // most recent inbound dispatch carrying this event id
+      const { data: dispatches } = await supabaseAdmin
+        .from("integration_dispatches")
+        .select("payload, created_at")
+        .eq("workspace_id", data.workspaceId)
+        .eq("direction", "inbound")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const match = (dispatches ?? []).find(
+        (d: any) => d?.payload?.event?.id === ref.external_id,
+      );
+      if (!match) {
+        skipped++;
+        continue;
+      }
+      try {
+        await processTessEvent({
+          boardId,
+          type: (match.payload as any).type ?? "event.updated",
+          event: (match.payload as any).event,
+        });
+        processed++;
+      } catch {
+        skipped++;
+      }
+    }
+    return { processed, skipped };
+  });
+
 /* ============ Board embed token management ============ */
 
 export const getBoardEmbedToken = createServerFn({ method: "GET" })

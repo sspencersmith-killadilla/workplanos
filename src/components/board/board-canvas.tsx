@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Fragment, type CSSProperties, useEffect, useMemo, useState } from "react";
 import {
@@ -23,6 +23,8 @@ import {
   Circle,
   Settings2,
   GripVertical,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import {
   DndContext,
@@ -56,8 +58,12 @@ import {
   deleteColumn,
   upsertValue,
   updateBoard,
+  deleteBoard,
   setItemCompleted,
 } from "@/lib/boards.functions";
+import { archiveBoard } from "@/lib/lifecycle.functions";
+import { getMyWorkspaceRole } from "@/lib/workspaces.functions";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { getBoardEmbedToken, setBoardEmbedEnabled } from "@/lib/integrations.functions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";

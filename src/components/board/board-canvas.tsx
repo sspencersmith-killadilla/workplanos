@@ -263,6 +263,71 @@ export function BoardCanvas({
     tableView ??
     { id: "", kind: "table", name: "Table" };
 
+  // --- DnD ---
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const activeDragItem = activeDragId ? effectiveItems.find((i) => i.id === activeDragId) ?? null : null;
+
+  const handleDragStart = (e: DragStartEvent) => {
+    setActiveDragId(String(e.active.id));
+  };
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    setActiveDragId(null);
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    const activeItem = effectiveItems.find((i) => i.id === activeId);
+    if (!activeItem) return;
+
+    // Determine destination group + insertion index
+    let destGroupId: string | null = null;
+    let destItems: Item[] = [];
+    let insertBeforeIndex = -1;
+
+    if (overId.startsWith("group:")) {
+      destGroupId = overId.slice("group:".length);
+      destItems = (itemsByGroup.get(destGroupId) ?? []).filter((i) => i.id !== activeId);
+      insertBeforeIndex = destItems.length; // append
+    } else {
+      const overItem = effectiveItems.find((i) => i.id === overId);
+      if (!overItem) return;
+      destGroupId = overItem.group_id;
+      destItems = (itemsByGroup.get(destGroupId ?? "__none") ?? []).filter(
+        (i) => i.id !== activeId,
+      );
+      insertBeforeIndex = destItems.findIndex((i) => i.id === overId);
+      if (insertBeforeIndex < 0) insertBeforeIndex = destItems.length;
+    }
+    if (!destGroupId) return;
+
+    const prev = insertBeforeIndex > 0 ? destItems[insertBeforeIndex - 1] : null;
+    const next = insertBeforeIndex < destItems.length ? destItems[insertBeforeIndex] : null;
+    let newPosition: number;
+    if (prev && next) newPosition = (prev.position + next.position) / 2;
+    else if (prev) newPosition = prev.position + 1024;
+    else if (next) newPosition = next.position - 1024;
+    else newPosition = 1024;
+
+    // Optimistic update
+    const base = effectiveItems.map((i) =>
+      i.id === activeId ? { ...i, group_id: destGroupId, position: newPosition } : i,
+    );
+    setLocalItems(base);
+
+    updateItemFn({ data: { id: activeId, groupId: destGroupId, position: newPosition } })
+      .then(() => invalidate())
+      .catch((err) => {
+        toast.error(err?.message ?? "Failed to move item");
+        setLocalItems(null);
+        invalidate();
+      });
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="border-b border-border/60 px-6 py-3 flex items-center justify-between shrink-0">

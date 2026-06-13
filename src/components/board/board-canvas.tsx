@@ -387,6 +387,13 @@ export function BoardCanvas({
 
       {activeView.kind === "table" && (
         <div className="flex-1 overflow-auto px-6 py-5">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveDragId(null)}
+          >
           <div className="space-y-6 min-w-fit">
             {groups.map((group) => (
               <GroupSection
@@ -427,6 +434,7 @@ export function BoardCanvas({
                 }
                 onDeleteColumn={(id) => deleteColumnFn({ data: { id } }).then(invalidate)}
                 onOpenItem={setDrawerItemId}
+                activeDragId={activeDragId}
               />
             ))}
 
@@ -437,6 +445,15 @@ export function BoardCanvas({
               <Plus className="h-4 w-4" /> Add group
             </button>
           </div>
+          <DragOverlay>
+            {activeDragItem ? (
+              <div className="bg-card border border-primary/50 shadow-lg rounded-md px-3 py-1.5 text-sm flex items-center gap-2 max-w-md">
+                <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="truncate">{activeDragItem.title}</span>
+              </div>
+            ) : null}
+          </DragOverlay>
+          </DndContext>
         </div>
       )}
 

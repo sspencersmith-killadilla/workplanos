@@ -47,7 +47,7 @@ export const getBoard = createServerFn({ method: "GET" })
         .order("position", { ascending: true }),
       supabase
         .from("item_values")
-        .select("item_id, column_id, text_value, number_value, date_value, date_end_value, link_url, link_label, status_option_id, people_user_ids")
+        .select("item_id, column_id, text_value, number_value, date_value, date_end_value, link_url, link_label, status_option_id, people_user_ids, people_external_ids")
         .in(
           "item_id",
           (

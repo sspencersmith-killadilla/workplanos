@@ -117,6 +117,7 @@ export function BoardCanvas({
   const deleteColumnFn = useServerFn(deleteColumn);
   const upsertValueFn = useServerFn(upsertValue);
   const updateBoardFn = useServerFn(updateBoard);
+  const setItemCompletedFn = useServerFn(setItemCompleted);
 
   const key = ["board", boardId] as const;
   const { data, isLoading } = useQuery({
@@ -180,8 +181,42 @@ export function BoardCanvas({
     return map;
   }, [data?.items]);
 
+  const subItemsByParent = useMemo(() => {
+    const map = new Map<string, Item[]>();
+    (data?.items ?? []).forEach((item: any) => {
+      if (!item.parent_item_id) return;
+      const arr = map.get(item.parent_item_id) ?? [];
+      arr.push(item);
+      map.set(item.parent_item_id, arr);
+    });
+    for (const arr of map.values()) arr.sort((a, b) => a.position - b.position);
+    return map;
+  }, [data?.items]);
+
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [drawerItemId, setDrawerItemId] = useState<string | null>(null);
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = window.localStorage.getItem(`board:${boardId}:expandedParents`);
+      if (raw) return new Set(JSON.parse(raw));
+    } catch {}
+    return new Set();
+  });
+  const toggleExpanded = (id: string) => {
+    setExpandedParents((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      try {
+        window.localStorage.setItem(
+          `board:${boardId}:expandedParents`,
+          JSON.stringify(Array.from(next)),
+        );
+      } catch {}
+      return next;
+    });
+  };
 
   if (isLoading || !data) {
     return <div className="p-8 text-sm text-muted-foreground">Loading board…</div>;

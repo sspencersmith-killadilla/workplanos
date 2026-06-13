@@ -272,42 +272,83 @@ function RuleCard(props: {
             When
           </Label>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-            <span>status</span>
             <Select
-              value={trigger.columnId}
+              value={trigger?.kind ?? "status_change"}
               onValueChange={(v) => {
-                const col = statusCols.find((c) => c.id === v);
-                const firstOpt = col?.settings?.options?.[0]?.id ?? "";
-                setTrigger({ kind: "status_change", columnId: v, optionId: firstOpt });
+                if (v === "status_change") {
+                  const col = statusCols[0];
+                  setTrigger({ kind: "status_change", columnId: col?.id ?? "", optionId: col?.settings?.options?.[0]?.id ?? "" });
+                } else if (v === "column_changed") {
+                  setTrigger({ kind: "column_changed", columnId: statusCols[0]?.id ?? "" });
+                } else {
+                  setTrigger({ kind: v });
+                }
               }}
             >
-              <SelectTrigger className="w-44 h-8">
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger className="w-56 h-8"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {statusCols.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.title}
-                  </SelectItem>
-                ))}
+                <SelectItem value="status_change">Status changes to…</SelectItem>
+                <SelectItem value="column_changed">A specific column changes</SelectItem>
+                <SelectItem value="item_created">An item is created</SelectItem>
+                <SelectItem value="item_updated">Any item value is updated</SelectItem>
+                <SelectItem value="comment_added">A comment is added</SelectItem>
+                <SelectItem value="activity_added">Any activity happens</SelectItem>
               </SelectContent>
             </Select>
-            <span>changes to</span>
-            <Select
-              value={trigger.optionId}
-              onValueChange={(v) => setTrigger({ ...trigger, optionId: v })}
-            >
-              <SelectTrigger className="w-44 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(triggerCol?.settings?.options ?? []).map((o) => (
-                  <SelectItem key={o.id} value={o.id}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+            {trigger?.kind === "status_change" && (
+              <>
+                <span>on</span>
+                <Select
+                  value={trigger.columnId}
+                  onValueChange={(v) => {
+                    const col = statusCols.find((c) => c.id === v);
+                    const firstOpt = col?.settings?.options?.[0]?.id ?? "";
+                    setTrigger({ kind: "status_change", columnId: v, optionId: firstOpt });
+                  }}
+                >
+                  <SelectTrigger className="w-40 h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {statusCols.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span>to</span>
+                <Select
+                  value={trigger.optionId}
+                  onValueChange={(v) => setTrigger({ ...trigger, optionId: v })}
+                >
+                  <SelectTrigger className="w-40 h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(triggerCol?.settings?.options ?? []).map((o) => (
+                      <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
+
+            {trigger?.kind === "column_changed" && (
+              <>
+                <span>:</span>
+                <Select
+                  value={trigger.columnId}
+                  onValueChange={(v) => setTrigger({ kind: "column_changed", columnId: v })}
+                >
+                  <SelectTrigger className="w-56 h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {((props as any).allColumns ?? []).length > 0
+                      ? (props as any).allColumns.map((c: any) => (
+                          <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+                        ))
+                      : statusCols.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+                        ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
           </div>
         </div>
 
@@ -342,6 +383,18 @@ function RuleCard(props: {
                 }
               >
                 <Bell className="h-3.5 w-3.5 mr-1.5" /> Notify
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setActions((s) => [
+                    ...s,
+                    { kind: "notify_people", message: "You were notified" },
+                  ])
+                }
+              >
+                <Users className="h-3.5 w-3.5 mr-1.5" /> Notify assignees
               </Button>
               <Button
                 variant="outline"

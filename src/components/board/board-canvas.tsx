@@ -249,6 +249,13 @@ export function BoardCanvas({
     });
   };
 
+  // --- DnD (hooks must run before any early return) ---
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
   if (isLoading || !data) {
     return <div className="p-8 text-sm text-muted-foreground">Loading board…</div>;
   }
@@ -263,12 +270,6 @@ export function BoardCanvas({
     tableView ??
     { id: "", kind: "table", name: "Table" };
 
-  // --- DnD ---
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const activeDragItem = activeDragId ? effectiveItems.find((i) => i.id === activeDragId) ?? null : null;
 
   const handleDragStart = (e: DragStartEvent) => {

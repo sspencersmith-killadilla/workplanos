@@ -376,6 +376,7 @@ function GroupSection(props: {
   onToggleComplete: (id: string, completed: boolean) => void;
   onAddSubItem: (parentId: string) => void;
   workspaceId: string;
+  boardId: string;
   onAddItem: () => void;
   onDeleteGroup: () => void;
   onUpdateGroup: (patch: Partial<Group>) => void;

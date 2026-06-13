@@ -35,6 +35,7 @@ import {
   deleteFile,
   signFileUrl,
 } from "@/lib/collab.functions";
+import { setItemCompleted } from "@/lib/boards.functions";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 

@@ -501,10 +501,30 @@ function GroupSection(props: {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {items.map((item) => {
+                const subs = props.subItemsByParent.get(item.id) ?? [];
+                const expanded = props.expandedParents.has(item.id);
+                const completedCount = subs.filter((s) => s.completed_at).length;
+                return (
+                <>
                 <tr key={item.id} className="border-t border-border/40 hover:bg-muted/20 group">
                   <td className="px-3 py-1.5 sticky left-0 bg-background z-10 border-r border-border/40 group-hover:bg-muted/20">
                     <div className="flex items-center gap-2">
+                      {subs.length > 0 ? (
+                        <button
+                          onClick={() => props.onToggleExpanded(item.id)}
+                          className="h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
+                          aria-label={expanded ? "Collapse sub-items" : "Expand sub-items"}
+                        >
+                          {expanded ? (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      ) : (
+                        <span className="w-5 shrink-0" />
+                      )}
                       <button
                         onClick={() => props.onOpenItem(item.id)}
                         className="opacity-0 group-hover:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
@@ -517,6 +537,11 @@ function GroupSection(props: {
                         onSave={(title) => props.onUpdateItem(item.id, title)}
                         className="flex-1 text-sm"
                       />
+                      {subs.length > 0 && (
+                        <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+                          {completedCount}/{subs.length}
+                        </span>
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button className="opacity-0 group-hover:opacity-100 h-6 w-6 grid place-items-center rounded hover:bg-muted text-muted-foreground">
@@ -524,6 +549,10 @@ function GroupSection(props: {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => props.onAddSubItem(item.id)}>
+                            <Plus className="h-3.5 w-3.5 mr-2" /> Add sub-item
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => props.onDeleteItem(item.id)}
                             className="text-destructive"
@@ -548,7 +577,77 @@ function GroupSection(props: {
 
                   <td />
                 </tr>
-              ))}
+                {expanded &&
+                  subs.map((sub) => (
+                    <tr
+                      key={sub.id}
+                      className="border-t border-border/40 hover:bg-muted/10 group/sub bg-muted/5"
+                    >
+                      <td
+                        colSpan={columns.length + 2}
+                        className="px-3 py-1 sticky left-0 z-10 border-r border-border/40"
+                      >
+                        <div className="flex items-center gap-2 pl-8">
+                          <span className="text-muted-foreground/60 text-xs select-none">└</span>
+                          <button
+                            onClick={() =>
+                              props.onToggleComplete(sub.id, !sub.completed_at)
+                            }
+                            className="shrink-0"
+                            aria-label={
+                              sub.completed_at ? "Mark incomplete" : "Mark complete"
+                            }
+                          >
+                            {sub.completed_at ? (
+                              <CheckCircle2 className="h-4 w-4 text-primary" />
+                            ) : (
+                              <Circle className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </button>
+                          <InlineEdit
+                            value={sub.title}
+                            onSave={(title) => props.onUpdateItem(sub.id, title)}
+                            className={cn(
+                              "flex-1 text-sm",
+                              sub.completed_at && "line-through text-muted-foreground",
+                            )}
+                          />
+                          <button
+                            onClick={() => props.onOpenItem(sub.id)}
+                            className="opacity-0 group-hover/sub:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-muted-foreground shrink-0"
+                            aria-label="Open sub-item"
+                          >
+                            <Expand className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => props.onDeleteItem(sub.id)}
+                            className="opacity-0 group-hover/sub:opacity-100 h-5 w-5 grid place-items-center rounded hover:bg-muted text-destructive shrink-0"
+                            aria-label="Delete sub-item"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                {expanded && (
+                  <tr className="bg-muted/5">
+                    <td
+                      colSpan={columns.length + 2}
+                      className="px-3 py-1 border-t border-border/40"
+                    >
+                      <button
+                        onClick={() => props.onAddSubItem(item.id)}
+                        className="flex items-center gap-2 pl-12 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        <Plus className="h-3 w-3" /> Add sub-item
+                      </button>
+                    </td>
+                  </tr>
+                )}
+                </>
+                );
+              })}
 
               <tr>
                 <td colSpan={columns.length + 2} className="px-3 py-2 border-t border-border/40">

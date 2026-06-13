@@ -472,6 +472,7 @@ export const upsertValue = createServerFn({ method: "POST" })
       link_label?: string | null;
       status_option_id?: string | null;
       people_user_ids?: string[] | null;
+      people_external_ids?: string[] | null;
     }) =>
       z
         .object({
@@ -485,6 +486,7 @@ export const upsertValue = createServerFn({ method: "POST" })
           link_label: z.string().nullable().optional(),
           status_option_id: z.string().nullable().optional(),
           people_user_ids: z.array(z.string().uuid()).nullable().optional(),
+          people_external_ids: z.array(z.string().uuid()).nullable().optional(),
         })
         .parse(d),
   )

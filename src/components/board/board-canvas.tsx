@@ -368,6 +368,11 @@ function GroupSection(props: {
   columns: Col[];
   items: Item[];
   values: Map<string, Map<string, Val>>;
+  subItemsByParent: Map<string, Item[]>;
+  expandedParents: Set<string>;
+  onToggleExpanded: (id: string) => void;
+  onToggleComplete: (id: string, completed: boolean) => void;
+  onAddSubItem: (parentId: string) => void;
   workspaceId: string;
   onAddItem: () => void;
   onDeleteGroup: () => void;

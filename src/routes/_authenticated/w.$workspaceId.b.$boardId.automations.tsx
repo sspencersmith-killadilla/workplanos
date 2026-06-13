@@ -439,10 +439,12 @@ function ActionRow(props: {
   onRemove: () => void;
 }) {
   const { action, statusCols } = props;
-  if (action.kind === "notify") {
+  if (action.kind === "notify" || action.kind === "notify_people") {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground w-16">Notify:</span>
+        <span className="text-xs text-muted-foreground w-24">
+          {action.kind === "notify_people" ? "Notify assignees:" : "Notify me:"}
+        </span>
         <Input
           value={action.message ?? ""}
           onChange={(e) => props.onChange({ ...action, message: e.target.value })}

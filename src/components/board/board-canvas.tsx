@@ -146,6 +146,18 @@ export function BoardCanvas({
   const upsertValueFn = useServerFn(upsertValue);
   const updateBoardFn = useServerFn(updateBoard);
   const setItemCompletedFn = useServerFn(setItemCompleted);
+  const archiveBoardFn = useServerFn(archiveBoard);
+  const deleteBoardFn = useServerFn(deleteBoard);
+  const getRoleFn = useServerFn(getMyWorkspaceRole);
+  const navigate = useNavigate();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletingBoard, setDeletingBoard] = useState(false);
+
+  const { data: roleData } = useQuery({
+    queryKey: ["myWorkspaceRole", workspaceId],
+    queryFn: () => getRoleFn({ data: { workspaceId } }),
+  });
+  const canDeleteBoard = roleData?.role === "owner" || roleData?.role === "admin";
 
   const key = ["board", boardId] as const;
   const { data, isLoading } = useQuery({

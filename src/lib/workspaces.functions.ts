@@ -67,3 +67,40 @@ export const getMyWorkspaceRole = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return { role: (row?.role as string | undefined) ?? null };
   });
+
+export const updateWorkspace = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; name?: string; color?: string }) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        name: z.string().min(1).max(60).optional(),
+        color: z.string().max(20).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { id, ...patch } = data;
+    const { error } = await context.supabase.from("workspaces").update(patch).eq("id", id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteWorkspace = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: ws, error: wsErr } = await context.supabase
+      .from("workspaces")
+      .select("owner_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (wsErr) throw new Error(wsErr.message);
+    if (!ws) throw new Error("Workspace not found");
+    if (ws.owner_id !== context.userId) {
+      throw new Error("Only the workspace owner can delete this workspace");
+    }
+    const { error } = await context.supabase.from("workspaces").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

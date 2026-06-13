@@ -290,6 +290,17 @@ export function BoardCanvas({
                 columns={columns}
                 items={itemsByGroup.get(group.id) ?? []}
                 values={valuesByItem}
+                subItemsByParent={subItemsByParent}
+                expandedParents={expandedParents}
+                onToggleExpanded={toggleExpanded}
+                onToggleComplete={(id, completed) =>
+                  setItemCompletedFn({ data: { id, completed } }).then(invalidate)
+                }
+                onAddSubItem={(parentId) =>
+                  createItemFn({
+                    data: { boardId, groupId: group.id, title: "New sub-item", parentId },
+                  }).then(invalidate)
+                }
                 workspaceId={workspaceId}
                 onAddItem={() =>
                   createItemFn({ data: { boardId, groupId: group.id, title: "New item" } }).then(invalidate)

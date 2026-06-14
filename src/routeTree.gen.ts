@@ -21,6 +21,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as EmbedBBoardIdRouteImport } from './routes/embed.b.$boardId'
 import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authenticated/w.$workspaceId'
+import { Route as AuthenticatedOrgOrgSlugRouteImport } from './routes/_authenticated/org.$orgSlug'
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
 import { Route as AuthenticatedWWorkspaceIdSettingsRouteImport } from './routes/_authenticated/w.$workspaceId.settings'
 import { Route as AuthenticatedWWorkspaceIdMembersRouteImport } from './routes/_authenticated/w.$workspaceId.members'
@@ -93,6 +94,11 @@ const AuthenticatedWWorkspaceIdRoute =
     path: '/w/$workspaceId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOrgOrgSlugRoute = AuthenticatedOrgOrgSlugRouteImport.update({
+  id: '/org/$orgSlug',
+  path: '/org/$orgSlug',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWWorkspaceIdIndexRoute =
   AuthenticatedWWorkspaceIdIndexRouteImport.update({
     id: '/',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/org/$orgSlug': typeof AuthenticatedOrgOrgSlugRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/embed/b/$boardId': typeof EmbedBBoardIdRoute
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/org/$orgSlug': typeof AuthenticatedOrgOrgSlugRoute
   '/embed/b/$boardId': typeof EmbedBBoardIdRoute
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
   '/w/$workspaceId/integrations': typeof AuthenticatedWWorkspaceIdIntegrationsRoute
@@ -218,6 +226,7 @@ export interface FileRoutesById {
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/_authenticated/org/$orgSlug': typeof AuthenticatedOrgOrgSlugRoute
   '/_authenticated/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/embed/b/$boardId': typeof EmbedBBoardIdRoute
   '/_authenticated/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/f/$slug'
     | '/invite/$token'
+    | '/org/$orgSlug'
     | '/w/$workspaceId'
     | '/embed/b/$boardId'
     | '/w/$workspaceId/dashboards'
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/f/$slug'
     | '/invite/$token'
+    | '/org/$orgSlug'
     | '/embed/b/$boardId'
     | '/w/$workspaceId/dashboards'
     | '/w/$workspaceId/integrations'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inbox'
     | '/f/$slug'
     | '/invite/$token'
+    | '/_authenticated/org/$orgSlug'
     | '/_authenticated/w/$workspaceId'
     | '/embed/b/$boardId'
     | '/_authenticated/w/$workspaceId/dashboards'
@@ -401,6 +413,13 @@ declare module '@tanstack/react-router' {
       path: '/w/$workspaceId'
       fullPath: '/w/$workspaceId'
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/org/$orgSlug': {
+      id: '/_authenticated/org/$orgSlug'
+      path: '/org/$orgSlug'
+      fullPath: '/org/$orgSlug'
+      preLoaderRoute: typeof AuthenticatedOrgOrgSlugRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/w/$workspaceId/': {
@@ -541,6 +560,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAppRoute: typeof AuthenticatedAppRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
+  AuthenticatedOrgOrgSlugRoute: typeof AuthenticatedOrgOrgSlugRoute
   AuthenticatedWWorkspaceIdRoute: typeof AuthenticatedWWorkspaceIdRouteWithChildren
 }
 
@@ -549,6 +569,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAppRoute: AuthenticatedAppRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
+  AuthenticatedOrgOrgSlugRoute: AuthenticatedOrgOrgSlugRoute,
   AuthenticatedWWorkspaceIdRoute: AuthenticatedWWorkspaceIdRouteWithChildren,
 }
 

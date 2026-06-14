@@ -2,12 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus, LogOut, Layout, User } from "lucide-react";
+import { Plus, LogOut, Layout, User, Building2, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { listMyWorkspaces, createWorkspace } from "@/lib/workspaces.functions";
+import { listMyOrganizations } from "@/lib/organizations.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/app")({
@@ -18,17 +20,27 @@ function AppHome() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const listFn = useServerFn(listMyWorkspaces);
+  const listOrgsFn = useServerFn(listMyOrganizations);
   const createFn = useServerFn(createWorkspace);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [orgId, setOrgId] = useState<string>("");
 
   const { data: workspaces, isLoading } = useQuery({
     queryKey: ["workspaces"],
     queryFn: () => listFn(),
   });
 
+  const { data: organizations } = useQuery({
+    queryKey: ["organizations"],
+    queryFn: () => listOrgsFn(),
+  });
+
+  const adminOrgs = (organizations ?? []).filter((o: any) => o.role === "owner" || o.role === "admin");
+
   const create = useMutation({
-    mutationFn: (n: string) => createFn({ data: { name: n } }),
+    mutationFn: (input: { name: string; organizationId: string }) =>
+      createFn({ data: input }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["workspaces"] });
       setOpen(false);
@@ -40,6 +52,17 @@ function AppHome() {
       toast.error(e?.message ?? "Could not create workspace");
     },
   });
+
+  function submitCreate() {
+    const trimmed = name.trim();
+    const chosenOrg = orgId || adminOrgs[0]?.id;
+    if (!trimmed) return;
+    if (!chosenOrg) {
+      toast.error("You need to be an admin of an organization to create a department.");
+      return;
+    }
+    create.mutate({ name: trimmed, organizationId: chosenOrg });
+  }
 
   async function signOut() {
     await qc.cancelQueries();
@@ -79,39 +102,71 @@ function AppHome() {
       <main className="mx-auto max-w-5xl px-6 py-12">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Your workspaces</h1>
-            <p className="text-sm text-muted-foreground mt-1">Pick one to enter, or create a new one.</p>
+            <h1 className="text-3xl font-semibold tracking-tight">Your departments</h1>
+            <p className="text-sm text-muted-foreground mt-1">Pick one to enter, or create a new one in your organization.</p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" /> New workspace
+              <Button disabled={adminOrgs.length === 0}>
+                <Plus className="h-4 w-4 mr-2" /> New department
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create workspace</DialogTitle>
+                <DialogTitle>Create department</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
+                {adminOrgs.length > 1 && (
+                  <Select value={orgId || adminOrgs[0]?.id} onValueChange={setOrgId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Organization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {adminOrgs.map((o: any) => (
+                        <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <Input
                   autoFocus
-                  placeholder="Marketing, Engineering, HR…"
+                  placeholder="Parks & Rec, Public Works, Records…"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && name.trim()) create.mutate(name.trim());
+                    if (e.key === "Enter") submitCreate();
                   }}
                 />
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button disabled={!name.trim() || create.isPending} onClick={() => create.mutate(name.trim())}>
+                <Button disabled={!name.trim() || create.isPending} onClick={submitCreate}>
                   Create
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
+
+        {organizations && organizations.length > 0 && (
+          <div className="mb-8 flex flex-wrap items-center gap-2">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground mr-1">Organizations</span>
+            {organizations.map((o: any) => (
+              <Link
+                key={o.id}
+                to="/org/$orgSlug"
+                params={{ orgSlug: o.slug }}
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm hover:border-primary/40 transition-colors"
+              >
+                <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                {o.name}
+                {(o.role === "owner" || o.role === "admin") && (
+                  <Settings className="h-3 w-3 text-muted-foreground" />
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
 
         {isLoading ? (
           <div className="text-sm text-muted-foreground">Loading…</div>

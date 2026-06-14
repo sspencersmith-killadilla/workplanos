@@ -15,7 +15,7 @@ export const listMyWorkspaces = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("workspaces")
-      .select("id, name, slug, color, owner_id, created_at")
+      .select("id, name, slug, color, owner_id, organization_id, created_at")
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
     return data;
@@ -37,16 +37,28 @@ export const getWorkspace = createServerFn({ method: "GET" })
 
 export const createWorkspace = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { name: string; color?: string }) =>
-    z.object({ name: z.string().min(1).max(60), color: z.string().optional() }).parse(d),
+  .inputValidator((d: { name: string; color?: string; organizationId: string }) =>
+    z
+      .object({
+        name: z.string().min(1).max(60),
+        color: z.string().optional(),
+        organizationId: z.string().uuid(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const baseSlug = slugify(data.name);
     const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
     const { data: ws, error } = await context.supabase
       .from("workspaces")
-      .insert({ name: data.name, slug, owner_id: context.userId, color: data.color ?? "#6366f1" })
-      .select("id, name, slug, color, owner_id")
+      .insert({
+        name: data.name,
+        slug,
+        owner_id: context.userId,
+        color: data.color ?? "#6366f1",
+        organization_id: data.organizationId,
+      })
+      .select("id, name, slug, color, owner_id, organization_id")
       .single();
     if (error) throw new Error(error.message);
     return ws;

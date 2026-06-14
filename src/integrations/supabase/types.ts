@@ -35,6 +35,47 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          organization_id: string
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_rules: {
         Row: {
           actions: Json
@@ -273,6 +314,48 @@ export type Database = {
           },
         ]
       }
+      board_shares: {
+        Row: {
+          access: Database["public"]["Enums"]["board_share_access"]
+          board_id: string
+          created_at: string
+          granted_by: string | null
+          id: string
+          shared_with_workspace_id: string
+        }
+        Insert: {
+          access?: Database["public"]["Enums"]["board_share_access"]
+          board_id: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          shared_with_workspace_id: string
+        }
+        Update: {
+          access?: Database["public"]["Enums"]["board_share_access"]
+          board_id?: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          shared_with_workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_shares_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_shares_shared_with_workspace_id_fkey"
+            columns: ["shared_with_workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       board_views: {
         Row: {
           board_id: string
@@ -462,6 +545,63 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      department_requests: {
+        Row: {
+          created_at: string
+          created_workspace_id: string | null
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          name: string
+          organization_id: string
+          reason: string | null
+          requested_by: string
+          status: Database["public"]["Enums"]["department_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_workspace_id?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          reason?: string | null
+          requested_by: string
+          status?: Database["public"]["Enums"]["department_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_workspace_id?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          reason?: string | null
+          requested_by?: string
+          status?: Database["public"]["Enums"]["department_request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_requests_created_workspace_id_fkey"
+            columns: ["created_workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "department_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -909,6 +1049,109 @@ export type Database = {
         }
         Relationships: []
       }
+      org_domains: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          organization_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          organization_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          organization_id?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_domains_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          created_at: string
+          organization_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          organization_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          organization_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          plan: string
+          primary_domain: string | null
+          settings: Json
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          plan?: string
+          primary_domain?: string | null
+          settings?: Json
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          plan?: string
+          primary_domain?: string | null
+          settings?: Json
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1120,6 +1363,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          organization_id: string
           owner_id: string
           slug: string
           updated_at: string
@@ -1129,6 +1373,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          organization_id: string
           owner_id: string
           slug: string
           updated_at?: string
@@ -1138,11 +1383,20 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          organization_id?: string
           owner_id?: string
           slug?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "workspaces_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1162,6 +1416,22 @@ export type Database = {
           workspace_id: string
           workspace_name: string
         }[]
+      }
+      has_board_share: {
+        Args: {
+          _board: string
+          _min_access: Database["public"]["Enums"]["board_share_access"]
+          _user: string
+        }
+        Returns: boolean
+      }
+      has_org_role: {
+        Args: {
+          _org: string
+          _roles: Database["public"]["Enums"]["org_role"][]
+          _user: string
+        }
+        Returns: boolean
       }
       has_role: {
         Args: {
@@ -1183,11 +1453,14 @@ export type Database = {
         Returns: boolean
       }
       is_member: { Args: { _user: string; _ws: string }; Returns: boolean }
+      is_org_member: { Args: { _org: string; _user: string }; Returns: boolean }
       item_workspace: { Args: { _item: string }; Returns: string }
+      org_for_workspace: { Args: { _ws: string }; Returns: string }
       shares_workspace: { Args: { _a: string; _b: string }; Returns: boolean }
     }
     Enums: {
       app_role: "super_admin"
+      board_share_access: "view" | "edit"
       column_kind:
         | "text"
         | "status"
@@ -1197,6 +1470,12 @@ export type Database = {
         | "number"
         | "formula"
         | "link"
+      department_request_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "cancelled"
+      org_role: "owner" | "admin" | "billing" | "member"
       view_kind: "table" | "kanban" | "calendar" | "workload"
       workspace_role: "owner" | "admin" | "member" | "viewer"
     }
@@ -1327,6 +1606,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin"],
+      board_share_access: ["view", "edit"],
       column_kind: [
         "text",
         "status",
@@ -1337,6 +1617,13 @@ export const Constants = {
         "formula",
         "link",
       ],
+      department_request_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "cancelled",
+      ],
+      org_role: ["owner", "admin", "billing", "member"],
       view_kind: ["table", "kanban", "calendar", "workload"],
       workspace_role: ["owner", "admin", "member", "viewer"],
     },

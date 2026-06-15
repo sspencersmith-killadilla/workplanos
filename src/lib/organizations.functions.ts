@@ -280,3 +280,95 @@ export const listAuditLog = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
+
+/* ============ Org Invites ============ */
+
+export const listOrgInvites = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { organizationId: string }) =>
+    z.object({ organizationId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("org_invites")
+      .select("id, email, role, token, expires_at, accepted_at, created_at")
+      .eq("organization_id", data.organizationId)
+      .is("accepted_at", null)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+export const createOrgInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { organizationId: string; email: string; role?: "admin" | "billing" | "member" }) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        email: z.string().email().max(255),
+        role: z.enum(["admin", "billing", "member"]).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("org_invites")
+      .upsert(
+        {
+          organization_id: data.organizationId,
+          email: data.email.toLowerCase().trim(),
+          role: (data.role ?? "member") as any,
+          invited_by: context.userId,
+          accepted_at: null,
+        },
+        { onConflict: "organization_id,email" },
+      )
+      .select("id, email, role, token, expires_at, created_at")
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+export const revokeOrgInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("org_invites").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const getOrgInvitePreview = createServerFn({ method: "GET" })
+  .inputValidator((d: { token: string }) =>
+    z.object({ token: z.string().min(10).max(200) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin.rpc("get_org_invite_preview", {
+      _token: data.token,
+    });
+    if (error) throw new Error(error.message);
+    const r = (rows as any[])?.[0];
+    if (!r) return null;
+    return {
+      organizationId: r.organization_id,
+      organizationName: r.organization_name,
+      email: r.email,
+      role: r.role,
+      expiresAt: r.expires_at,
+      accepted: r.accepted,
+    };
+  });
+
+export const acceptOrgInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { token: string }) =>
+    z.object({ token: z.string().min(10).max(200) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: organizationId, error } = await context.supabase.rpc("accept_org_invite", {
+      _token: data.token,
+    });
+    if (error) throw new Error(error.message);
+    return { organizationId: organizationId as string };
+  });

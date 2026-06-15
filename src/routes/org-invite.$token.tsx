@@ -6,7 +6,7 @@ import { Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { getOrgInvitePreview, acceptOrgInvite, getOrganization } from "@/lib/organizations.functions";
+import { getOrgInvitePreview, acceptOrgInvite } from "@/lib/organizations.functions";
 
 export const Route = createFileRoute("/org-invite/$token")({
   ssr: false,
@@ -18,7 +18,6 @@ function OrgInvitePage() {
   const navigate = useNavigate();
   const previewFn = useServerFn(getOrgInvitePreview);
   const acceptFn = useServerFn(acceptOrgInvite);
-  const getOrgFn = useServerFn(getOrganization);
 
   const [session, setSession] = useState<any>(null);
   const [checking, setChecking] = useState(true);

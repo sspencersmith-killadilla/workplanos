@@ -13,6 +13,7 @@ import { Route as HelpRouteImport } from './routes/help'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OrgInviteTokenRouteImport } from './routes/org-invite.$token'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
@@ -51,6 +52,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgInviteTokenRoute = OrgInviteTokenRouteImport.update({
+  id: '/org-invite/$token',
+  path: '/org-invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
@@ -176,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/org-invite/$token': typeof OrgInviteTokenRoute
   '/org/$orgSlug': typeof AuthenticatedOrgOrgSlugRoute
   '/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/embed/b/$boardId': typeof EmbedBBoardIdRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/org-invite/$token': typeof OrgInviteTokenRoute
   '/org/$orgSlug': typeof AuthenticatedOrgOrgSlugRoute
   '/embed/b/$boardId': typeof EmbedBBoardIdRoute
   '/w/$workspaceId/dashboards': typeof AuthenticatedWWorkspaceIdDashboardsRoute
@@ -226,6 +234,7 @@ export interface FileRoutesById {
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/org-invite/$token': typeof OrgInviteTokenRoute
   '/_authenticated/org/$orgSlug': typeof AuthenticatedOrgOrgSlugRoute
   '/_authenticated/w/$workspaceId': typeof AuthenticatedWWorkspaceIdRouteWithChildren
   '/embed/b/$boardId': typeof EmbedBBoardIdRoute
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/f/$slug'
     | '/invite/$token'
+    | '/org-invite/$token'
     | '/org/$orgSlug'
     | '/w/$workspaceId'
     | '/embed/b/$boardId'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/f/$slug'
     | '/invite/$token'
+    | '/org-invite/$token'
     | '/org/$orgSlug'
     | '/embed/b/$boardId'
     | '/w/$workspaceId/dashboards'
@@ -302,6 +313,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inbox'
     | '/f/$slug'
     | '/invite/$token'
+    | '/org-invite/$token'
     | '/_authenticated/org/$orgSlug'
     | '/_authenticated/w/$workspaceId'
     | '/embed/b/$boardId'
@@ -325,6 +337,7 @@ export interface RootRouteChildren {
   HelpRoute: typeof HelpRoute
   FSlugRoute: typeof FSlugRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  OrgInviteTokenRoute: typeof OrgInviteTokenRoute
   EmbedBBoardIdRoute: typeof EmbedBBoardIdRoute
   ApiPublicIntegrationsTessInboundRoute: typeof ApiPublicIntegrationsTessInboundRoute
 }
@@ -357,6 +370,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/org-invite/$token': {
+      id: '/org-invite/$token'
+      path: '/org-invite/$token'
+      fullPath: '/org-invite/$token'
+      preLoaderRoute: typeof OrgInviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invite/$token': {
@@ -583,19 +603,10 @@ const rootRouteChildren: RootRouteChildren = {
   HelpRoute: HelpRoute,
   FSlugRoute: FSlugRoute,
   InviteTokenRoute: InviteTokenRoute,
+  OrgInviteTokenRoute: OrgInviteTokenRoute,
   EmbedBBoardIdRoute: EmbedBBoardIdRoute,
   ApiPublicIntegrationsTessInboundRoute: ApiPublicIntegrationsTessInboundRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

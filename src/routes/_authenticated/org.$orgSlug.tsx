@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ArrowLeft, Building2, Globe, Users, Inbox, FileText, Plus, Trash2, Check, X } from "lucide-react";
+import { ArrowLeft, Building2, Globe, Users, Inbox, FileText, Plus, Trash2, Check, X, Mail, Copy } from "lucide-react";
 import {
   getOrganization,
   listOrgMembers,
@@ -14,6 +14,9 @@ import {
   listDepartmentRequests,
   decideDepartmentRequest,
   listAuditLog,
+  listOrgInvites,
+  createOrgInvite,
+  revokeOrgInvite,
 } from "@/lib/organizations.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +79,11 @@ function OrgConsole() {
 
           <TabsContent value="members" className="mt-6">
             <MembersTab organizationId={org.id} canAdmin={canAdmin} qc={qc} />
+            {canAdmin && (
+              <div className="mt-8">
+                <InvitesSection organizationId={org.id} qc={qc} />
+              </div>
+            )}
           </TabsContent>
           <TabsContent value="domains" className="mt-6">
             <DomainsTab organizationId={org.id} canAdmin={canAdmin} qc={qc} />
@@ -289,5 +297,91 @@ function AuditTab({ organizationId }: { organizationId: string }) {
       ))}
       {!entries?.length && <div className="p-6 text-sm text-muted-foreground">No audit entries yet.</div>}
     </div>
+  );
+}
+
+function InvitesSection({ organizationId, qc }: { organizationId: string; qc: ReturnType<typeof useQueryClient> }) {
+  const listFn = useServerFn(listOrgInvites);
+  const createFn = useServerFn(createOrgInvite);
+  const revokeFn = useServerFn(revokeOrgInvite);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"admin" | "billing" | "member">("member");
+
+  const { data: invites } = useQuery({
+    queryKey: ["org-invites", organizationId],
+    queryFn: () => listFn({ data: { organizationId } }),
+  });
+
+  const create = useMutation({
+    mutationFn: () => createFn({ data: { organizationId, email, role } }),
+    onSuccess: () => {
+      setEmail("");
+      qc.invalidateQueries({ queryKey: ["org-invites", organizationId] });
+      toast.success("Invite created — copy the link to share");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+  });
+
+  const revoke = useMutation({
+    mutationFn: (id: string) => revokeFn({ data: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["org-invites", organizationId] }),
+  });
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const copyLink = (token: string) => {
+    navigator.clipboard.writeText(`${origin}/org-invite/${token}`);
+    toast.success("Invite link copied");
+  };
+
+  return (
+    <section className="space-y-3">
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        Invite to organization
+      </h2>
+      <div className="flex gap-2">
+        <Input
+          type="email"
+          placeholder="person@city.gov"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Select value={role} onValueChange={(v) => setRole(v as any)}>
+          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="member">Member</SelectItem>
+            <SelectItem value="billing">Billing</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button onClick={() => create.mutate()} disabled={!email.includes("@") || create.isPending}>
+          <Mail className="h-3.5 w-3.5 mr-1.5" /> Invite
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Invites are link-based. Recipients accept by signing in with the invited email. Expires after 14 days.
+      </p>
+      {(invites?.length ?? 0) > 0 && (
+        <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+          {invites!.map((i: any) => (
+            <li key={i.id} className="flex items-center justify-between p-3">
+              <div className="min-w-0">
+                <div className="text-sm truncate">{i.email}</div>
+                <div className="text-xs text-muted-foreground">
+                  {i.role} · expires {new Date(i.expires_at).toLocaleDateString()}
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" onClick={() => copyLink(i.token)}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => revoke.mutate(i.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

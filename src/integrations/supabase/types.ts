@@ -1081,6 +1081,50 @@ export type Database = {
           },
         ]
       }
+      org_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          organization_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          organization_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          organization_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_invites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -1403,6 +1447,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_org_invite: { Args: { _token: string }; Returns: string }
       accept_workspace_invite: { Args: { _token: string }; Returns: string }
       board_workspace: { Args: { _board: string }; Returns: string }
       dashboard_workspace: { Args: { _dash: string }; Returns: string }
@@ -1415,6 +1460,17 @@ export type Database = {
           role: Database["public"]["Enums"]["workspace_role"]
           workspace_id: string
           workspace_name: string
+        }[]
+      }
+      get_org_invite_preview: {
+        Args: { _token: string }
+        Returns: {
+          accepted: boolean
+          email: string
+          expires_at: string
+          organization_id: string
+          organization_name: string
+          role: Database["public"]["Enums"]["org_role"]
         }[]
       }
       has_board_share: {

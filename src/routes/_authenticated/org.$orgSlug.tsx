@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ArrowLeft, Building2, Globe, Users, Inbox, FileText, Plus, Trash2, Check, X } from "lucide-react";
+import { ArrowLeft, Building2, Globe, Users, Inbox, FileText, Plus, Trash2, Check, X, Mail, Copy } from "lucide-react";
 import {
   getOrganization,
   listOrgMembers,
@@ -14,6 +14,9 @@ import {
   listDepartmentRequests,
   decideDepartmentRequest,
   listAuditLog,
+  listOrgInvites,
+  createOrgInvite,
+  revokeOrgInvite,
 } from "@/lib/organizations.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +79,11 @@ function OrgConsole() {
 
           <TabsContent value="members" className="mt-6">
             <MembersTab organizationId={org.id} canAdmin={canAdmin} qc={qc} />
+            {canAdmin && (
+              <div className="mt-8">
+                <InvitesSection organizationId={org.id} qc={qc} />
+              </div>
+            )}
           </TabsContent>
           <TabsContent value="domains" className="mt-6">
             <DomainsTab organizationId={org.id} canAdmin={canAdmin} qc={qc} />

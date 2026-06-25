@@ -49,7 +49,7 @@ function PublicFormPage() {
       submitFn({ data: { slug, title: title || "Untitled submission", values } }),
     onSuccess: () => {
       const redirect = data?.form.redirect_url;
-      if (redirect) {
+      if (redirect && /^https?:\/\//i.test(redirect)) {
         window.location.href = redirect;
       } else {
         setDone(true);

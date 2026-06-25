@@ -72,7 +72,15 @@ export const updateForm = createServerFn({ method: "POST" })
           description: z.string().max(500).nullable().optional(),
           fields: z.unknown().optional(),
           is_published: z.boolean().optional(),
-          redirect_url: z.string().max(500).nullable().optional(),
+          redirect_url: z
+            .string()
+            .max(500)
+            .url()
+            .refine((u) => /^https?:\/\//i.test(u), {
+              message: "Only http(s) URLs are allowed",
+            })
+            .nullable()
+            .optional(),
         })
         .parse(d),
   )

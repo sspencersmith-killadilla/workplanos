@@ -9,35 +9,39 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as HelpRouteImport } from './routes/help'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as OrgInviteTokenRouteImport } from './routes/org-invite.$token'
-import { Route as InviteTokenRouteImport } from './routes/invite.$token'
-import { Route as FSlugRouteImport } from './routes/f.$slug'
-import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
-import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
-import { Route as EmbedBBoardIdRouteImport } from './routes/embed.b.$boardId'
-import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authenticated/w.$workspaceId'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
+import { Route as FSlugRouteImport } from './routes/f.$slug'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as OrgInviteTokenRouteImport } from './routes/org-invite.$token'
 import { Route as AuthenticatedOrgOrgSlugRouteImport } from './routes/_authenticated/org.$orgSlug'
+import { Route as AuthenticatedWWorkspaceIdRouteImport } from './routes/_authenticated/w.$workspaceId'
+import { Route as EmbedBBoardIdRouteImport } from './routes/embed.b.$boardId'
 import { Route as AuthenticatedWWorkspaceIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.index'
-import { Route as AuthenticatedWWorkspaceIdSettingsRouteImport } from './routes/_authenticated/w.$workspaceId.settings'
-import { Route as AuthenticatedWWorkspaceIdMembersRouteImport } from './routes/_authenticated/w.$workspaceId.members'
-import { Route as AuthenticatedWWorkspaceIdIntegrationsRouteImport } from './routes/_authenticated/w.$workspaceId.integrations'
 import { Route as AuthenticatedWWorkspaceIdDashboardsRouteImport } from './routes/_authenticated/w.$workspaceId.dashboards'
-import { Route as ApiPublicIntegrationsTessInboundRouteImport } from './routes/api/public/integrations/tess/inbound'
+import { Route as AuthenticatedWWorkspaceIdIntegrationsRouteImport } from './routes/_authenticated/w.$workspaceId.integrations'
+import { Route as AuthenticatedWWorkspaceIdMembersRouteImport } from './routes/_authenticated/w.$workspaceId.members'
+import { Route as AuthenticatedWWorkspaceIdSettingsRouteImport } from './routes/_authenticated/w.$workspaceId.settings'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId'
+import { Route as ApiPublicIntegrationsTessInboundRouteImport } from './routes/api/public/integrations/tess/inbound'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdIndexRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.index'
-import { Route as AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.forms'
-import { Route as AuthenticatedWWorkspaceIdBBoardIdCustomizeRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.customize'
 import { Route as AuthenticatedWWorkspaceIdBBoardIdAutomationsRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.automations'
+import { Route as AuthenticatedWWorkspaceIdBBoardIdCustomizeRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.customize'
+import { Route as AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport } from './routes/_authenticated/w.$workspaceId.b.$boardId.forms'
 
-const HelpRoute = HelpRouteImport.update({
-  id: '/help',
-  path: '/help',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -45,38 +49,14 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrgInviteTokenRoute = OrgInviteTokenRouteImport.update({
-  id: '/org-invite/$token',
-  path: '/org-invite/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InviteTokenRoute = InviteTokenRouteImport.update({
-  id: '/invite/$token',
-  path: '/invite/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FSlugRoute = FSlugRouteImport.update({
-  id: '/f/$slug',
-  path: '/f/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
-  id: '/inbox',
-  path: '/inbox',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
-  id: '/app',
-  path: '/app',
+const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -84,15 +64,35 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
-  id: '/account',
-  path: '/account',
+const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const EmbedBBoardIdRoute = EmbedBBoardIdRouteImport.update({
-  id: '/embed/b/$boardId',
-  path: '/embed/b/$boardId',
+const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const FSlugRoute = FSlugRouteImport.update({
+  id: '/f/$slug',
+  path: '/f/$slug',
   getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgInviteTokenRoute = OrgInviteTokenRouteImport.update({
+  id: '/org-invite/$token',
+  path: '/org-invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedOrgOrgSlugRoute = AuthenticatedOrgOrgSlugRouteImport.update({
+  id: '/org/$orgSlug',
+  path: '/org/$orgSlug',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedWWorkspaceIdRoute =
   AuthenticatedWWorkspaceIdRouteImport.update({
@@ -100,33 +100,15 @@ const AuthenticatedWWorkspaceIdRoute =
     path: '/w/$workspaceId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedOrgOrgSlugRoute = AuthenticatedOrgOrgSlugRouteImport.update({
-  id: '/org/$orgSlug',
-  path: '/org/$orgSlug',
-  getParentRoute: () => AuthenticatedRouteRoute,
+const EmbedBBoardIdRoute = EmbedBBoardIdRouteImport.update({
+  id: '/embed/b/$boardId',
+  path: '/embed/b/$boardId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedWWorkspaceIdIndexRoute =
   AuthenticatedWWorkspaceIdIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
-  } as any)
-const AuthenticatedWWorkspaceIdSettingsRoute =
-  AuthenticatedWWorkspaceIdSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
-  } as any)
-const AuthenticatedWWorkspaceIdMembersRoute =
-  AuthenticatedWWorkspaceIdMembersRouteImport.update({
-    id: '/members',
-    path: '/members',
-    getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
-  } as any)
-const AuthenticatedWWorkspaceIdIntegrationsRoute =
-  AuthenticatedWWorkspaceIdIntegrationsRouteImport.update({
-    id: '/integrations',
-    path: '/integrations',
     getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
   } as any)
 const AuthenticatedWWorkspaceIdDashboardsRoute =
@@ -135,11 +117,23 @@ const AuthenticatedWWorkspaceIdDashboardsRoute =
     path: '/dashboards',
     getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
   } as any)
-const ApiPublicIntegrationsTessInboundRoute =
-  ApiPublicIntegrationsTessInboundRouteImport.update({
-    id: '/api/public/integrations/tess/inbound',
-    path: '/api/public/integrations/tess/inbound',
-    getParentRoute: () => rootRouteImport,
+const AuthenticatedWWorkspaceIdIntegrationsRoute =
+  AuthenticatedWWorkspaceIdIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
+  } as any)
+const AuthenticatedWWorkspaceIdMembersRoute =
+  AuthenticatedWWorkspaceIdMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
+  } as any)
+const AuthenticatedWWorkspaceIdSettingsRoute =
+  AuthenticatedWWorkspaceIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
   } as any)
 const AuthenticatedWWorkspaceIdBBoardIdRoute =
   AuthenticatedWWorkspaceIdBBoardIdRouteImport.update({
@@ -147,16 +141,22 @@ const AuthenticatedWWorkspaceIdBBoardIdRoute =
     path: '/b/$boardId',
     getParentRoute: () => AuthenticatedWWorkspaceIdRoute,
   } as any)
+const ApiPublicIntegrationsTessInboundRoute =
+  ApiPublicIntegrationsTessInboundRouteImport.update({
+    id: '/api/public/integrations/tess/inbound',
+    path: '/api/public/integrations/tess/inbound',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedWWorkspaceIdBBoardIdIndexRoute =
   AuthenticatedWWorkspaceIdBBoardIdIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedWWorkspaceIdBBoardIdRoute,
   } as any)
-const AuthenticatedWWorkspaceIdBBoardIdFormsRoute =
-  AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport.update({
-    id: '/forms',
-    path: '/forms',
+const AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute =
+  AuthenticatedWWorkspaceIdBBoardIdAutomationsRouteImport.update({
+    id: '/automations',
+    path: '/automations',
     getParentRoute: () => AuthenticatedWWorkspaceIdBBoardIdRoute,
   } as any)
 const AuthenticatedWWorkspaceIdBBoardIdCustomizeRoute =
@@ -165,10 +165,10 @@ const AuthenticatedWWorkspaceIdBBoardIdCustomizeRoute =
     path: '/customize',
     getParentRoute: () => AuthenticatedWWorkspaceIdBBoardIdRoute,
   } as any)
-const AuthenticatedWWorkspaceIdBBoardIdAutomationsRoute =
-  AuthenticatedWWorkspaceIdBBoardIdAutomationsRouteImport.update({
-    id: '/automations',
-    path: '/automations',
+const AuthenticatedWWorkspaceIdBBoardIdFormsRoute =
+  AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport.update({
+    id: '/forms',
+    path: '/forms',
     getParentRoute: () => AuthenticatedWWorkspaceIdBBoardIdRoute,
   } as any)
 
@@ -344,18 +344,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/help': {
-      id: '/help'
-      path: '/help'
-      fullPath: '/help'
-      preLoaderRoute: typeof HelpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -365,46 +358,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/org-invite/$token': {
-      id: '/org-invite/$token'
-      path: '/org-invite/$token'
-      fullPath: '/org-invite/$token'
-      preLoaderRoute: typeof OrgInviteTokenRouteImport
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/invite/$token': {
-      id: '/invite/$token'
-      path: '/invite/$token'
-      fullPath: '/invite/$token'
-      preLoaderRoute: typeof InviteTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/f/$slug': {
-      id: '/f/$slug'
-      path: '/f/$slug'
-      fullPath: '/f/$slug'
-      preLoaderRoute: typeof FSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/inbox': {
-      id: '/_authenticated/inbox'
-      path: '/inbox'
-      fullPath: '/inbox'
-      preLoaderRoute: typeof AuthenticatedInboxRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/app': {
-      id: '/_authenticated/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AuthenticatedAppRouteImport
+    '/_authenticated/account': {
+      id: '/_authenticated/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AuthenticatedAccountRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin': {
@@ -414,11 +386,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/account': {
-      id: '/_authenticated/account'
-      path: '/account'
-      fullPath: '/account'
-      preLoaderRoute: typeof AuthenticatedAccountRouteImport
+    '/_authenticated/app': {
+      id: '/_authenticated/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AuthenticatedAppRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/inbox': {
+      id: '/_authenticated/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AuthenticatedInboxRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/f/$slug': {
+      id: '/f/$slug'
+      path: '/f/$slug'
+      fullPath: '/f/$slug'
+      preLoaderRoute: typeof FSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/org-invite/$token': {
+      id: '/org-invite/$token'
+      path: '/org-invite/$token'
+      fullPath: '/org-invite/$token'
+      preLoaderRoute: typeof OrgInviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/org/$orgSlug': {
+      id: '/_authenticated/org/$orgSlug'
+      path: '/org/$orgSlug'
+      fullPath: '/org/$orgSlug'
+      preLoaderRoute: typeof AuthenticatedOrgOrgSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/w/$workspaceId': {
+      id: '/_authenticated/w/$workspaceId'
+      path: '/w/$workspaceId'
+      fullPath: '/w/$workspaceId'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/embed/b/$boardId': {
@@ -428,46 +442,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmbedBBoardIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/w/$workspaceId': {
-      id: '/_authenticated/w/$workspaceId'
-      path: '/w/$workspaceId'
-      fullPath: '/w/$workspaceId'
-      preLoaderRoute: typeof AuthenticatedWWorkspaceIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/org/$orgSlug': {
-      id: '/_authenticated/org/$orgSlug'
-      path: '/org/$orgSlug'
-      fullPath: '/org/$orgSlug'
-      preLoaderRoute: typeof AuthenticatedOrgOrgSlugRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/w/$workspaceId/': {
       id: '/_authenticated/w/$workspaceId/'
       path: '/'
       fullPath: '/w/$workspaceId/'
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdIndexRouteImport
-      parentRoute: typeof AuthenticatedWWorkspaceIdRoute
-    }
-    '/_authenticated/w/$workspaceId/settings': {
-      id: '/_authenticated/w/$workspaceId/settings'
-      path: '/settings'
-      fullPath: '/w/$workspaceId/settings'
-      preLoaderRoute: typeof AuthenticatedWWorkspaceIdSettingsRouteImport
-      parentRoute: typeof AuthenticatedWWorkspaceIdRoute
-    }
-    '/_authenticated/w/$workspaceId/members': {
-      id: '/_authenticated/w/$workspaceId/members'
-      path: '/members'
-      fullPath: '/w/$workspaceId/members'
-      preLoaderRoute: typeof AuthenticatedWWorkspaceIdMembersRouteImport
-      parentRoute: typeof AuthenticatedWWorkspaceIdRoute
-    }
-    '/_authenticated/w/$workspaceId/integrations': {
-      id: '/_authenticated/w/$workspaceId/integrations'
-      path: '/integrations'
-      fullPath: '/w/$workspaceId/integrations'
-      preLoaderRoute: typeof AuthenticatedWWorkspaceIdIntegrationsRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdRoute
     }
     '/_authenticated/w/$workspaceId/dashboards': {
@@ -477,12 +456,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdDashboardsRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdRoute
     }
-    '/api/public/integrations/tess/inbound': {
-      id: '/api/public/integrations/tess/inbound'
-      path: '/api/public/integrations/tess/inbound'
-      fullPath: '/api/public/integrations/tess/inbound'
-      preLoaderRoute: typeof ApiPublicIntegrationsTessInboundRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/w/$workspaceId/integrations': {
+      id: '/_authenticated/w/$workspaceId/integrations'
+      path: '/integrations'
+      fullPath: '/w/$workspaceId/integrations'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedWWorkspaceIdRoute
+    }
+    '/_authenticated/w/$workspaceId/members': {
+      id: '/_authenticated/w/$workspaceId/members'
+      path: '/members'
+      fullPath: '/w/$workspaceId/members'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdMembersRouteImport
+      parentRoute: typeof AuthenticatedWWorkspaceIdRoute
+    }
+    '/_authenticated/w/$workspaceId/settings': {
+      id: '/_authenticated/w/$workspaceId/settings'
+      path: '/settings'
+      fullPath: '/w/$workspaceId/settings'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdSettingsRouteImport
+      parentRoute: typeof AuthenticatedWWorkspaceIdRoute
     }
     '/_authenticated/w/$workspaceId/b/$boardId': {
       id: '/_authenticated/w/$workspaceId/b/$boardId'
@@ -491,6 +484,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdRoute
     }
+    '/api/public/integrations/tess/inbound': {
+      id: '/api/public/integrations/tess/inbound'
+      path: '/api/public/integrations/tess/inbound'
+      fullPath: '/api/public/integrations/tess/inbound'
+      preLoaderRoute: typeof ApiPublicIntegrationsTessInboundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/w/$workspaceId/b/$boardId/': {
       id: '/_authenticated/w/$workspaceId/b/$boardId/'
       path: '/'
@@ -498,11 +498,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdBBoardIdIndexRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRoute
     }
-    '/_authenticated/w/$workspaceId/b/$boardId/forms': {
-      id: '/_authenticated/w/$workspaceId/b/$boardId/forms'
-      path: '/forms'
-      fullPath: '/w/$workspaceId/b/$boardId/forms'
-      preLoaderRoute: typeof AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport
+    '/_authenticated/w/$workspaceId/b/$boardId/automations': {
+      id: '/_authenticated/w/$workspaceId/b/$boardId/automations'
+      path: '/automations'
+      fullPath: '/w/$workspaceId/b/$boardId/automations'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRoute
     }
     '/_authenticated/w/$workspaceId/b/$boardId/customize': {
@@ -512,11 +512,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWWorkspaceIdBBoardIdCustomizeRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRoute
     }
-    '/_authenticated/w/$workspaceId/b/$boardId/automations': {
-      id: '/_authenticated/w/$workspaceId/b/$boardId/automations'
-      path: '/automations'
-      fullPath: '/w/$workspaceId/b/$boardId/automations'
-      preLoaderRoute: typeof AuthenticatedWWorkspaceIdBBoardIdAutomationsRouteImport
+    '/_authenticated/w/$workspaceId/b/$boardId/forms': {
+      id: '/_authenticated/w/$workspaceId/b/$boardId/forms'
+      path: '/forms'
+      fullPath: '/w/$workspaceId/b/$boardId/forms'
+      preLoaderRoute: typeof AuthenticatedWWorkspaceIdBBoardIdFormsRouteImport
       parentRoute: typeof AuthenticatedWWorkspaceIdBBoardIdRoute
     }
   }

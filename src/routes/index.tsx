@@ -1,3 +1,4 @@
+import { LogoMark } from "@/components/LogoMark";
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Layers, Sparkles, Workflow, Zap, GitBranch, BarChart3 } from "lucide-react";
@@ -20,7 +21,7 @@ function Index() {
       <header className="border-b border-border/60 backdrop-blur-md sticky top-0 z-30 bg-background/80">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
-            <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground font-bold">W</div>
+            <LogoMark className="h-7 w-7" />
             <span className="font-semibold tracking-tight">WorkPlanOS</span>
           </div>
           <nav className="hidden gap-7 text-sm text-muted-foreground md:flex">
@@ -115,8 +116,8 @@ function Index() {
       <footer className="border-t border-border/60 py-10">
         <div className="mx-auto max-w-6xl px-6 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="grid h-5 w-5 place-items-center rounded bg-primary text-primary-foreground font-bold text-[10px]">W</div>
-            <span>© WorkPlanOS</span>
+            <LogoMark className="h-5 w-5" />
+            <span>© WorkPlanOS · Open source · MIT · Part of the Civic Plexus suite with <a href="https://lead-together-now.lovable.app" className="hover:text-foreground underline-offset-2 hover:underline">Tandem</a> and <a href="https://policy-to-playbook.lovable.app" className="hover:text-foreground underline-offset-2 hover:underline">Relay</a></span>
           </div>
           <div className="flex items-center gap-5">
             <Link to="/help" className="hover:text-foreground transition-colors">

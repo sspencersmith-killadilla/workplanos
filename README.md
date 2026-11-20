@@ -24,3 +24,7 @@ A workspace-based work-management platform with boards, items, views, forms, aut
 - Tailwind CSS v4 + shadcn/ui
 - Supabase (Postgres + Auth + Storage)
 - Vite 7 + Bun + TypeScript
+
+## License
+
+WorkPlanOS is open source under the [MIT License](./LICENSE). Part of the Civic Plexus suite alongside Tandem and Relay.

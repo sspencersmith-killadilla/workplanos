@@ -1,3 +1,4 @@
+import { LogoMark } from "@/components/LogoMark";
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,7 +114,7 @@ function AuthPage() {
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-primary/10 via-background to-background border-r border-border/60">
         <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground font-bold">W</div>
+          <LogoMark className="h-7 w-7" />
           WorkPlanOS
         </Link>
         <div>

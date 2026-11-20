@@ -1,3 +1,4 @@
+import { LogoMark } from "@/components/LogoMark";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft, BookOpen } from "lucide-react";
@@ -229,7 +230,7 @@ function HelpPage() {
       <header className="border-b border-border/60 sticky top-0 z-20 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground font-bold">W</div>
+            <LogoMark className="h-7 w-7" />
             WorkPlanOS
           </Link>
           <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
